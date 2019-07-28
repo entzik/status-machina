@@ -1,9 +1,5 @@
 package com.thekirschners.statusmachina.core;
 
-import io.liquidshare.statusmachina.core.MachineDef;
-import io.liquidshare.statusmachina.core.MachineInstance;
-import io.liquidshare.statusmachina.core.TransitionException;
-
 import java.util.NoSuchElementException;
 import java.util.function.Consumer;
 
