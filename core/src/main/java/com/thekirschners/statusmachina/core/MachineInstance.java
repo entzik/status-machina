@@ -1,8 +1,7 @@
 package com.thekirschners.statusmachina.core;
 
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.time.Instant;
+import java.util.*;
 import java.util.function.Consumer;
 
 public class MachineInstance<S, E> {
@@ -10,6 +9,7 @@ public class MachineInstance<S, E> {
 
     private MachineDef<S, E> def;
     private Map<String, String> context;
+    private List<TransitionResult<S,E>> history;
 
     private S currentState;
 
@@ -21,8 +21,10 @@ public class MachineInstance<S, E> {
         this.id = UUID.randomUUID().toString();
         this.def = def;
         this.context = context;
+        this.history = new ArrayList<>();
 
         currentState = def.getInitialState();
+        recordStpTransition();
 
         tryStp();
     }
@@ -40,6 +42,7 @@ public class MachineInstance<S, E> {
             throw new TransitionException(MachineInstance.this, transition);
         }
         this.currentState = transition.getTo();
+        recordEventTransition(event);
 
         tryStp();
     }
@@ -52,10 +55,19 @@ public class MachineInstance<S, E> {
             try {
                 action.ifPresent(mapConsumer -> mapConsumer.accept(context));
                 currentState = transition.getTo();
+                recordStpTransition();
             } catch (Throwable t) {
                 throw new TransitionException(MachineInstance.this, transition);
             }
         }
+    }
+
+    private boolean recordEventTransition(E event) {
+        return history.add(new TransitionResult<>(currentState, event, Instant.now()));
+    }
+
+    private void recordStpTransition() {
+        history.add(new TransitionResult<>(currentState, Instant.now()));
     }
 
     public S getCurrentState() {
