@@ -47,6 +47,10 @@ public class MachineInstance<S, E> {
         tryStp();
     }
 
+    public S getCurrentState() {
+        return currentState;
+    }
+
     private void tryStp() throws TransitionException {
         Optional<Transition<S, E>> stpTransition;
         while ((stpTransition = def.findStpTransition(currentState)).isPresent()) {
@@ -68,9 +72,5 @@ public class MachineInstance<S, E> {
 
     private void recordStpTransition() {
         history.add(new TransitionResult<>(currentState, Instant.now()));
-    }
-
-    public S getCurrentState() {
-        return currentState;
     }
 }
