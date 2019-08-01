@@ -67,11 +67,33 @@ public class SpringJpaStateMachineServiceTest {
     }
 
     @Test
-    void tesStateMachineLockedAfterSaving() {
+    void testStateMachineLockedAfterSaving() {
         try {
             final MachineInstance<States, Events> instance = buildStateMachine();
             service.create(instance);
 
+            assertThatExceptionOfType(IllegalStateException.class)
+                    .isThrownBy(() -> service.lock(instance.getId()))
+                    .withMessageStartingWith("machine is locked by another instance, ID=")
+                    .as("new machines are locked by default, locking again should have thrown IllegalStateException");
+        } catch (TransitionException e) {
+            fail("machine was not created", e);
+        }
+    }
+
+    @Test
+    void testUnclockAndLockBack() {
+        try {
+            final MachineInstance<States, Events> instance = buildStateMachine();
+            service.create(instance);
+
+            // a new machine is locked so unlock it
+            service.release(instance.getId());
+
+            // now lock it back
+            service.lock(instance.getId());
+
+            // and make sure you can't lock it twice
             assertThatExceptionOfType(IllegalStateException.class)
                     .isThrownBy(() -> service.lock(instance.getId()))
                     .withMessageStartingWith("machine is locked by another instance, ID=")
