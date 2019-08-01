@@ -52,3 +52,10 @@ tasks.getByName("jar") {
 tasks.getByName("bootJar") {
     enabled = false
 }
+
+tasks.test {
+    useJUnitPlatform()
+    testLogging {
+        events("passed", "skipped", "failed")
+    }
+}
