@@ -29,6 +29,10 @@ public class MachineInstanceTest {
             .terminalStates(States.S4, States.S5)
             .events(Events.values())
             .transitions(t1, t2, t3, t4)
+            .setEventToString(Enum::name)
+            .setStringToEvent(Events::valueOf)
+            .setStateToString(Enum::name)
+            .setStringToState(States::valueOf)
             .build();
 
     @BeforeEach

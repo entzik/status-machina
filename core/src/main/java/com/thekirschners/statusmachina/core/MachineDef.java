@@ -2,9 +2,12 @@ package com.thekirschners.statusmachina.core;
 
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 public class MachineDef<S,E> {
+    private Class<S> stateType;
+    private Class<E> eventType;
     final private Set<S> allStates;
     final private S initialState;
     final private Set<S> terminalStates;
@@ -13,13 +16,34 @@ public class MachineDef<S,E> {
 
     final private Set<Transition<S,E>> transitions;
     final private String name;
+    final private Function<S, String> stateToString;
+    final private Function<String, S> stringToState;
+    final private Function<E, String> eventToString;
+    final private Function<String, E> stringToEvent;
 
     public static <S,E> Builder<S,E> newBuilder() {
         return new Builder<>();
     }
 
-    public MachineDef(String name, Set<S> allStates, S initialState, Set<S> terminalStates, Set<E> events, Set<Transition<S, E>> transitions) {
+    public MachineDef(
+            String name,
+            Set<S> allStates,
+            S initialState,
+            Set<S> terminalStates,
+            Set<E> events,
+            Set<Transition<S, E>> transitions,
+            Function<S,String> stateToString,
+            Function<String,S> stringToState,
+            Function<E, String> eventToString,
+            Function<String, E> stringToEvent
+    ) {
         this.name = name;
+        this.stateToString = stateToString;
+        this.stringToState = stringToState;
+        this.eventToString = eventToString;
+        this.stringToEvent = stringToEvent;
+        this.stateType = stateType;
+        this.eventType = eventType;
         this.allStates = allStates;
         this.initialState = initialState;
         this.terminalStates = terminalStates;
@@ -47,6 +71,22 @@ public class MachineDef<S,E> {
         return transitions;
     }
 
+    public Function<S, String> getStateToString() {
+        return stateToString;
+    }
+
+    public Function<String, S> getStringToState() {
+        return stringToState;
+    }
+
+    public Function<E, String> getEventToString() {
+        return eventToString;
+    }
+
+    public Function<String, E> getStringToEvent() {
+        return stringToEvent;
+    }
+
     public Optional<Transition<S, E>> findStpTransition(S state) {
         return transitions.stream().filter(t -> t.getFrom().equals(state) && t.isSTP()).findFirst();
     }
@@ -61,7 +101,7 @@ public class MachineDef<S,E> {
         return name;
     }
 
-    static class Builder<S,E> {
+    public static class Builder<S,E> {
         private Set<S> allStates;
         private S initialState;
         private Set<S> terminalStates;
@@ -71,6 +111,12 @@ public class MachineDef<S,E> {
         private Set<Transition<S,E>> transitions;
 
         private String name;
+
+        Function<S,String> stateToString;
+        Function<String,S> stringToState;
+        Function<E, String> eventToString;
+        Function<String, E> stringToEvent;
+
 
         Builder() {
         }
@@ -107,6 +153,26 @@ public class MachineDef<S,E> {
             return this;
         }
 
+        public Builder<S, E> setStateToString(Function<S, String> stateToString) {
+            this.stateToString = stateToString;
+            return this;
+        }
+
+        public Builder<S, E> setStringToState(Function<String, S> stringToState) {
+            this.stringToState = stringToState;
+            return this;
+        }
+
+        public Builder<S, E> setEventToString(Function<E, String> eventToString) {
+            this.eventToString = eventToString;
+            return this;
+        }
+
+        public Builder<S, E> setStringToEvent(Function<String, E> stringToEvent) {
+            this.stringToEvent = stringToEvent;
+            return this;
+        }
+
         public Builder<S, E> transitions(Transition<S, E>... allTransitions) {
             Set<Transition<S, E>> transitions = new HashSet<>(Arrays.asList(allTransitions));
             if (events == null || allStates == null)
@@ -126,7 +192,11 @@ public class MachineDef<S,E> {
                     initialState,
                     Collections.unmodifiableSet(terminalStates),
                     Collections.unmodifiableSet(events),
-                    Collections.unmodifiableSet(transitions)
+                    Collections.unmodifiableSet(transitions),
+                    stateToString,
+                    stringToState,
+                    eventToString,
+                    stringToEvent
             );
         }
 

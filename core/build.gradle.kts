@@ -11,7 +11,10 @@ plugins {
     `java-library`
     `idea`
     `eclipse`
+    id("org.springframework.boot") version "2.1.6.RELEASE"
 }
+
+apply(plugin = "io.spring.dependency-management")
 
 repositories {
     // Use jcenter for resolving your dependencies.
@@ -20,14 +23,32 @@ repositories {
     mavenCentral()
 }
 
+
+
 dependencies {
     // This dependency is exported to consumers, that is to say found on their compile classpath.
     // api("org.apache.commons:commons-math3:3.6.1")
 
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
     // implementation("com.google.guava:guava:26.0-jre")
+    implementation("org.springframework.boot:spring-boot-starter")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("javax.validation:validation-api")
 
     // Use JUnit test framework
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.5.1")
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.junit.jupiter:junit-jupiter-api")
+    testImplementation("org.junit.jupiter:junit-jupiter-engine")
+    testRuntimeOnly("com.h2database:h2")
+//    testRuntimeOnly("org.liquibase:liquibase-core")
     testImplementation("org.assertj:assertj-core:3.4.1")
+}
+
+
+tasks.getByName("jar") {
+    enabled = true
+}
+
+tasks.getByName("bootJar") {
+    enabled = false
 }

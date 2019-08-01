@@ -3,6 +3,7 @@ package com.thekirschners.statusmachina.core;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 public class MachinaDefinitionTest {
     final Transition<States, Events> t1 = new Transition<>(States.S1, States.S2);
@@ -17,6 +18,10 @@ public class MachinaDefinitionTest {
             .terminalStates(States.S4, States.S5)
             .events(Events.values())
             .transitions(t1, t2, t3, t4)
+            .setEventToString(Enum::name)
+            .setStringToEvent(Events::valueOf)
+            .setStateToString(Enum::name)
+            .setStringToState(States::valueOf)
             .build();
 
     @Test
