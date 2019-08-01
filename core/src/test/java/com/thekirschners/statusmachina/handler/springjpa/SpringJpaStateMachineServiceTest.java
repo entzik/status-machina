@@ -1,19 +1,15 @@
 package com.thekirschners.statusmachina.handler.springjpa;
 
 import com.thekirschners.statusmachina.TestSpringBootApp;
-import com.thekirschners.statusmachina.core.*;
-import com.thekirschners.statusmachina.handler.springjpa.model.ExternalState;
-import com.thekirschners.statusmachina.handler.springjpa.repo.ExternalStateRepository;
-import org.assertj.core.api.Assertions;
+import com.thekirschners.statusmachina.core.MachineDef;
+import com.thekirschners.statusmachina.core.MachineInstance;
+import com.thekirschners.statusmachina.core.Transition;
+import com.thekirschners.statusmachina.core.TransitionException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,7 +22,6 @@ import static org.assertj.core.api.Assertions.*;
         classes = TestSpringBootApp.class,
         webEnvironment = SpringBootTest.WebEnvironment.NONE
 )
-@Transactional
 public class SpringJpaStateMachineServiceTest {
     final SpyAction a1 = new SpyAction();
     final SpyAction a2 = new SpyAction();
@@ -55,24 +50,43 @@ public class SpringJpaStateMachineServiceTest {
     SpringJpaStateMachineService service;
 
     @Test
-    void springTest() {
+    void testSaveStateMachine() {
         try {
-            final HashMap<String, String> context = new HashMap<>();
-            context.put("k1", "v1");
-            context.put("k2", "v2");
-            context.put("k3", "v3");
-            final MachineInstance<States, Events> instance = MachineInstance.ofType(def).withContext(context);
+            final MachineInstance<States, Events> instance = buildStateMachine();
             service.create(instance);
 
             final MachineInstance<States, Events> read = service.read(def, instance.getId());
 
             assertThat(read.getId()).isEqualTo(instance.getId()).as("id matches");
-            assertThat(read.getContext()).containsExactly(context.entrySet().toArray(new Map.Entry[context.size()])).as("context matches");
+            assertThat(read.getContext()).containsExactly(instance.getContext().entrySet().toArray(new Map.Entry[instance.getContext().size()])).as("context matches");
             assertThat(read.getCurrentState()).isEqualTo(instance.getCurrentState()).as("states match");
 
         } catch (TransitionException e) {
             fail("machine was not created", e);
         }
+    }
+
+    @Test
+    void tesStateMachineLockedAfterSaving() {
+        try {
+            final MachineInstance<States, Events> instance = buildStateMachine();
+            service.create(instance);
+
+            assertThatExceptionOfType(IllegalStateException.class)
+                    .isThrownBy(() -> service.lock(instance.getId()))
+                    .withMessageStartingWith("machine is locked by another instance, ID=")
+                    .as("new machines are locked by default, locking again should have thrown IllegalStateException");
+        } catch (TransitionException e) {
+            fail("machine was not created", e);
+        }
+    }
+
+    private MachineInstance<States, Events> buildStateMachine() throws TransitionException {
+        final HashMap<String, String> context = new HashMap<>();
+        context.put("k1", "v1");
+        context.put("k2", "v2");
+        context.put("k3", "v3");
+        return (MachineInstance<States, Events>) MachineInstance.ofType(def).withContext(context);
     }
 
 
@@ -84,7 +98,7 @@ public class SpringJpaStateMachineServiceTest {
         E23, E34, E35
     }
 
-    static class SpyAction implements Consumer<Map<String,String>> {
+    static class SpyAction implements Consumer<Map<String, String>> {
         private boolean beenThere = false;
         private Map<String, String> context;
 
@@ -105,4 +119,5 @@ public class SpringJpaStateMachineServiceTest {
         public void reset() {
             beenThere = false;
         }
-    }}
+    }
+}

@@ -72,6 +72,7 @@ public class SpringJpaStateMachineService implements StateMachineService {
         currentState.setType(machineInstance.getDef().getName());
         currentState.setCurrentState(machineInstance.getDef().getStateToString().apply(machineInstance.getCurrentState()));
         currentState.setContext(new HashMap<>(machineInstance.getContext()));
+        currentState.setLocked(true);
 
         return currentState;
     }
