@@ -67,6 +67,34 @@ public class SpringJpaStateMachineServiceTest {
     }
 
     @Test
+    void testUpdateStateMachine() {
+        try {
+            // create a state machine instance
+            final MachineInstance<States, Events> instance = buildStateMachine();
+            service.create(instance);
+            service.release(instance.getId());
+
+            // lock / read / send event / update / releaase
+            service.lock(instance.getId());
+            final MachineInstance<States, Events> created = service.read(def, instance.getId());
+            created.sendEvent(Events.E23);
+            service.update(created);
+            service.release(instance.getId());
+
+            // read updated state machine from DB
+            final MachineInstance<States, Events> updated = service.read(def, instance.getId());
+
+            // assert
+            assertThat(updated.getId()).isEqualTo(instance.getId()).as("id matches");
+            assertThat(updated.getContext()).containsExactly(instance.getContext().entrySet().toArray(new Map.Entry[instance.getContext().size()])).as("context matches");
+            assertThat(updated.getCurrentState()).isEqualTo(States.S3).as("states match");
+
+        } catch (TransitionException e) {
+            fail("machine was not created", e);
+        }
+    }
+
+    @Test
     void testStateMachineLockedAfterSaving() {
         try {
             final MachineInstance<States, Events> instance = buildStateMachine();

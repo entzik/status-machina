@@ -38,13 +38,15 @@ public class MachineInstance<S, E> {
             Map<String, String> context,
             List<TransitionRecord<S, E>> history,
             Optional<Throwable> error
-    ) {
+    ) throws TransitionException {
         this.id = id;
         this.def = def;
         this.context = context;
         this.history = history;
         this.error = error;
         this.currentState = currentState;
+
+        tryStp();
     }
 
     public String getId() {
@@ -109,7 +111,8 @@ public class MachineInstance<S, E> {
     }
 
     private boolean recordEventTransition(E event) {
-        return history.add(new TransitionRecord<>(currentState, event, Instant.now()));
+//        return history.add(new TransitionRecord<>(currentState, event, Instant.now()));
+        return true;
     }
 
     private void recordStpTransition() {
