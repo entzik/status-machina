@@ -1,9 +1,13 @@
-package com.thekirschners.statusmachina.handler.springjpa;
+package com.thekirschners.statusmachina.handler;
 
 import com.thekirschners.statusmachina.core.MachineDef;
 import com.thekirschners.statusmachina.core.MachineInstance;
 import com.thekirschners.statusmachina.core.TransitionException;
+import com.thekirschners.statusmachina.handler.springjpa.SpringJpaLockService;
+import com.thekirschners.statusmachina.handler.springjpa.SpringJpaStateMachineService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,15 +17,22 @@ import java.util.function.Consumer;
 @Service
 @Transactional
 public class SpringStateMachineHelper {
-    private static final int MAX_LOCK_RETRIES = 5;
+    @Value("${statusmachina.acquire.retries.max:5}")
+    private int maxRetries;
+
+    @Value("${statusmachina.acquire.retries.delay.increment:200}")
+    private int retryDelay;
 
     @Autowired
-    SpringJpaStateMachineService service;
+    StateMachineService service;
+
+    @Autowired
+    StateMachineLockService lockService;
 
     public <S, E> void newStateMachine(MachineDef<S, E> def, Map<String, String> context) throws TransitionException {
         final MachineInstance<S, E> machineInstance = service.newMachine(def, context);
         service.create(machineInstance);
-        service.release(machineInstance.getId());
+        lockService.release(machineInstance.getId());
     }
 
     public <S, E> void withNewStateMachine(MachineDef<S, E> def, Map<String, String> context, Consumer<MachineInstance<S, E>> consumer) throws TransitionException {
@@ -31,7 +42,7 @@ public class SpringStateMachineHelper {
             consumer.accept(machineInstance);
             service.update(machineInstance);
         } finally {
-            service.release(machineInstance.getId());
+            lockService.release(machineInstance.getId());
         }
     }
 
@@ -42,23 +53,23 @@ public class SpringStateMachineHelper {
             consumer.accept(machineInstance);
             service.update(machineInstance);
         } finally {
-            service.release(id);;
+            lockService.release(id);;
         }
     }
 
     private void waitForMachine(String id) {
         boolean notLocked = true;
-        for (int i = 0; i < MAX_LOCK_RETRIES && notLocked; i ++)
+        for (int i = 0; i < maxRetries && notLocked; i ++)
             try {
-                service.lock(id);
+                lockService.lock(id);
                 notLocked = false;
             } catch (Exception e) {
                 try {
-                    Thread.sleep(200 * (i + 1));
+                    Thread.sleep(retryDelay * (i + 1));
                 } catch (InterruptedException ex) { /* just ignore */ }
             }
         if (notLocked)
-            service.lock(id);
+            lockService.lock(id);
     }
 
 }

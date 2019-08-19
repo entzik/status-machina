@@ -5,9 +5,12 @@ import com.thekirschners.statusmachina.core.MachineDef;
 import com.thekirschners.statusmachina.core.MachineInstance;
 import com.thekirschners.statusmachina.core.Transition;
 import com.thekirschners.statusmachina.core.TransitionException;
+import com.thekirschners.statusmachina.handler.StateMachineLockService;
+import com.thekirschners.statusmachina.handler.StateMachineService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
@@ -47,7 +50,10 @@ public class SpringJpaStateMachineServiceTest {
             .build();
 
     @Autowired
-    SpringJpaStateMachineService service;
+    StateMachineService service;
+
+    @Autowired
+    StateMachineLockService lockService;
 
     @Test
     void testSaveStateMachine() {
@@ -72,14 +78,14 @@ public class SpringJpaStateMachineServiceTest {
             // create a state machine instance
             final MachineInstance<States, Events> instance = buildStateMachine();
             service.create(instance);
-            service.release(instance.getId());
+            lockService.release(instance.getId());
 
             // lock / read / send event / update / releaase
-            service.lock(instance.getId());
+            lockService.lock(instance.getId());
             final MachineInstance<States, Events> created = service.read(def, instance.getId());
             created.sendEvent(Events.E23);
             service.update(created);
-            service.release(instance.getId());
+            lockService.release(instance.getId());
 
             // read updated state machine from DB
             final MachineInstance<States, Events> updated = service.read(def, instance.getId());
@@ -101,7 +107,7 @@ public class SpringJpaStateMachineServiceTest {
             service.create(instance);
 
             assertThatExceptionOfType(IllegalStateException.class)
-                    .isThrownBy(() -> service.lock(instance.getId()))
+                    .isThrownBy(() -> lockService.lock(instance.getId()))
                     .withMessageStartingWith("machine is locked by another instance, ID=")
                     .as("new machines are locked by default, locking again should have thrown IllegalStateException");
         } catch (TransitionException e) {
@@ -116,14 +122,14 @@ public class SpringJpaStateMachineServiceTest {
             service.create(instance);
 
             // a new machine is locked so unlock it
-            service.release(instance.getId());
+            lockService.release(instance.getId());
 
             // now lock it back
-            service.lock(instance.getId());
+            lockService.lock(instance.getId());
 
             // and make sure you can't lock it twice
             assertThatExceptionOfType(IllegalStateException.class)
-                    .isThrownBy(() -> service.lock(instance.getId()))
+                    .isThrownBy(() -> lockService.lock(instance.getId()))
                     .withMessageStartingWith("machine is locked by another instance, ID=")
                     .as("new machines are locked by default, locking again should have thrown IllegalStateException");
         } catch (TransitionException e) {
