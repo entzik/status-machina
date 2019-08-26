@@ -16,6 +16,7 @@ plugins {
 
 apply(plugin = "io.spring.dependency-management")
 
+
 repositories {
     // Use jcenter for resolving your dependencies.
     // You can declare any Maven/Ivy/file repository here.
@@ -59,3 +60,4 @@ tasks.test {
         events("passed", "skipped", "failed")
     }
 }
+

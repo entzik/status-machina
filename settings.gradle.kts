@@ -1,2 +1,2 @@
-include("core")
-include("spring")
+include("status-machina-core")
+include("status-machina-spring")
