@@ -18,7 +18,7 @@
 *.zip
 *.tar.gz
 *.rar
-
+!gradle/wrapper/gradle-wrapper.jar
 
 #intellij idea files
 .idea/
