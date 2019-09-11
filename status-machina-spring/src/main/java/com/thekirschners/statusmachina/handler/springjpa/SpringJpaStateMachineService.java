@@ -1,9 +1,11 @@
 package com.thekirschners.statusmachina.handler.springjpa;
 
-import com.thekirschners.statusmachina.core.MachineDef;
-import com.thekirschners.statusmachina.core.MachineInstance;
+import com.thekirschners.statusmachina.core.MachineInstanceImpl;
 import com.thekirschners.statusmachina.core.TransitionException;
-import com.thekirschners.statusmachina.handler.StateMachineService;
+import com.thekirschners.statusmachina.core.api.MachineDef;
+import com.thekirschners.statusmachina.core.api.MachineInstance;
+import com.thekirschners.statusmachina.core.api.MachineInstanceBuilder;
+import com.thekirschners.statusmachina.core.spi.StateMachineService;
 import com.thekirschners.statusmachina.handler.springjpa.model.ExternalState;
 import com.thekirschners.statusmachina.handler.springjpa.repo.ExternalStateRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,9 +20,12 @@ public class SpringJpaStateMachineService implements StateMachineService {
     @Autowired
     ExternalStateRepository externalStateRepository;
 
+    @Autowired
+    MachineInstanceBuilder machineInstanceBuilder;
+
     @Override
     public <S, E> MachineInstance<S, E> newMachine(MachineDef<S, E> def, Map<String, String> context) throws TransitionException {
-        return MachineInstance.ofType(def).withContext(context);
+        return machineInstanceBuilder.ofType(def).withContext(context).build();
     }
 
     @Override
@@ -29,7 +34,7 @@ public class SpringJpaStateMachineService implements StateMachineService {
         final Map<String, String> context = externalState.getContext();
         final S currentstate = def.getStringToState().apply(externalState.getCurrentState());
 
-        return new MachineInstance<>(id, def, currentstate, context, Collections.emptyList(), Optional.empty());
+        return new MachineInstanceImpl<>(id, def, currentstate, context, Collections.emptyList(), Optional.empty());
     }
 
     @Override

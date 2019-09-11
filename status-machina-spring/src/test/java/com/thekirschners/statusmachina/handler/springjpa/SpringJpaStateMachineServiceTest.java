@@ -1,16 +1,17 @@
 package com.thekirschners.statusmachina.handler.springjpa;
 
 import com.thekirschners.statusmachina.TestSpringBootApp;
-import com.thekirschners.statusmachina.core.MachineDef;
-import com.thekirschners.statusmachina.core.MachineInstance;
+import com.thekirschners.statusmachina.core.MachineDefImpl;
+import com.thekirschners.statusmachina.core.MachineInstanceImpl;
 import com.thekirschners.statusmachina.core.Transition;
 import com.thekirschners.statusmachina.core.TransitionException;
-import com.thekirschners.statusmachina.handler.StateMachineLockService;
-import com.thekirschners.statusmachina.handler.StateMachineService;
+import com.thekirschners.statusmachina.core.api.MachineDef;
+import com.thekirschners.statusmachina.core.api.MachineInstance;
+import com.thekirschners.statusmachina.core.spi.StateMachineLockService;
+import com.thekirschners.statusmachina.core.spi.StateMachineService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
@@ -36,7 +37,7 @@ public class SpringJpaStateMachineServiceTest {
     final Transition<States, Events> t3 = new Transition<>(States.S3, States.S4, Events.E34, a3);
     final Transition<States, Events> t4 = new Transition<>(States.S3, States.S5, Events.E35, a4);
 
-    final MachineDef<States, Events> def = MachineDef.<States, Events>newBuilder()
+    final MachineDef<States, Events> def = MachineDefImpl.<States, Events>newBuilder()
             .setName("toto")
             .states(States.values())
             .initialState(States.S1)
@@ -142,7 +143,7 @@ public class SpringJpaStateMachineServiceTest {
         context.put("k1", "v1");
         context.put("k2", "v2");
         context.put("k3", "v3");
-        return (MachineInstance<States, Events>) MachineInstance.ofType(def).withContext(context);
+        return MachineInstanceImpl.ofType(def).withContext(context).build();
     }
 
 

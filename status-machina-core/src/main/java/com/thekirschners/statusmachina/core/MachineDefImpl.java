@@ -1,12 +1,26 @@
 package com.thekirschners.statusmachina.core;
 
 
+import com.thekirschners.statusmachina.core.api.MachineDef;
+
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-public class MachineDef<S,E> {
+/**
+ * Defines a state machine by its states, events and transitions
+ *
+ * @param <S>
+ * @param <E>
+ */
+public class MachineDefImpl<S,E> implements MachineDef<S, E> {
+    /**
+     * the type of the object used to define the machine's state
+     */
     private Class<S> stateType;
+    /**
+     * the type of the events received by the state machine
+     */
     private Class<E> eventType;
     final private Set<S> allStates;
     final private S initialState;
@@ -25,7 +39,7 @@ public class MachineDef<S,E> {
         return new Builder<>();
     }
 
-    public MachineDef(
+    public MachineDefImpl(
             String name,
             Set<S> allStates,
             S initialState,
@@ -51,52 +65,64 @@ public class MachineDef<S,E> {
         this.transitions = transitions;
     }
 
+    @Override
     public Set<S> getAllStates() {
         return allStates;
     }
 
+    @Override
     public S getInitialState() {
         return initialState;
     }
 
+    @Override
     public Set<S> getTerminalStates() {
         return terminalStates;
     }
 
+    @Override
     public Set<E> getEvents() {
         return events;
     }
 
+    @Override
     public Set<Transition<S, E>> getTransitions() {
         return transitions;
     }
 
+    @Override
     public Function<S, String> getStateToString() {
         return stateToString;
     }
 
+    @Override
     public Function<String, S> getStringToState() {
         return stringToState;
     }
 
+    @Override
     public Function<E, String> getEventToString() {
         return eventToString;
     }
 
+    @Override
     public Function<String, E> getStringToEvent() {
         return stringToEvent;
     }
 
+    @Override
     public Optional<Transition<S, E>> findStpTransition(S state) {
         return transitions.stream().filter(t -> t.getFrom().equals(state) && t.isSTP()).findFirst();
     }
 
+    @Override
     public Optional<Transition<S, E>> findEventTransion(S currentState, E event) {
         final Predicate<Transition<S, E>> fromCurrentState = t -> t.getFrom().equals(currentState);
         final Predicate<Transition<S, E>> forThisEvent = t -> !t.isSTP() && t.getEvent().get().equals(event);
         return transitions.stream().filter(fromCurrentState.and(forThisEvent)).findFirst();
     }
 
+    @Override
     public String getName() {
         return name;
     }
@@ -185,8 +211,8 @@ public class MachineDef<S,E> {
             return this;
         }
 
-        public MachineDef<S,E> build() {
-            return new MachineDef<>(
+        public MachineDefImpl<S,E> build() {
+            return new MachineDefImpl<>(
                     name,
                     Collections.unmodifiableSet(allStates),
                     initialState,

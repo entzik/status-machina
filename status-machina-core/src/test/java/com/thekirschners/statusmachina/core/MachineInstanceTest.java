@@ -1,5 +1,7 @@
 package com.thekirschners.statusmachina.core;
 
+import com.thekirschners.statusmachina.core.api.MachineDef;
+import com.thekirschners.statusmachina.core.api.MachineInstance;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -22,7 +24,7 @@ public class MachineInstanceTest {
     final Transition<States, Events> t3 = new Transition<>(States.S3, States.S4, Events.E34, a3);
     final Transition<States, Events> t4 = new Transition<>(States.S3, States.S5, Events.E35, a4);
 
-    final MachineDef<States, Events> def = MachineDef.<States, Events>newBuilder()
+    final MachineDef<States, Events> def = MachineDefImpl.<States, Events>newBuilder()
             .setName("toto")
             .states(States.values())
             .initialState(States.S1)
@@ -46,7 +48,7 @@ public class MachineInstanceTest {
     @Test
     void testInstantiationAndStp() {
         try {
-            final MachineInstance<States, Events> instance = new MachineInstance<>(def, new HashMap<>());
+            final MachineInstance<States, Events> instance = new MachineInstanceImpl<>(def, new HashMap<>());
             assertThat(instance.getId()).isNotEmpty();
             assertThat(instance.getCurrentState()).isEqualTo(States.S2).as("after creation machine has moved from state S1 to state S2 using STP transition t1");
             assertThat(a1.hasBeenThere()).isTrue();
@@ -58,7 +60,7 @@ public class MachineInstanceTest {
     @Test
     void testEventTransition1() {
         try {
-            final MachineInstance<States, Events> instance = new MachineInstance<>(def, new HashMap<>());
+            final MachineInstanceImpl<States, Events> instance = new MachineInstanceImpl<>(def, new HashMap<>());
             instance.sendEvent(Events.E23);
             assertThat(instance.getCurrentState()).isEqualTo(States.S3).as("after creation machine has moved from state S2 to state S3 using event transition t2");
             assertThat(a1.hasBeenThere()).isTrue();
@@ -71,7 +73,7 @@ public class MachineInstanceTest {
     @Test
     void testEventTransition2() {
         try {
-            final MachineInstance<States, Events> instance = new MachineInstance<>(def, new HashMap<>());
+            final MachineInstanceImpl<States, Events> instance = new MachineInstanceImpl<>(def, new HashMap<>());
             instance.sendEvent(Events.E23);
             instance.sendEvent(Events.E34);
             assertThat(instance.getCurrentState()).isEqualTo(States.S4).as("after creation machine has moved from state S3 to state S4 using event transition t3");
@@ -87,7 +89,7 @@ public class MachineInstanceTest {
     @Test
     void testEventTransition3() {
         try {
-            final MachineInstance<States, Events> instance = new MachineInstance<>(def, new HashMap<>());
+            final MachineInstanceImpl<States, Events> instance = new MachineInstanceImpl<>(def, new HashMap<>());
             instance.sendEvent(Events.E23);
             instance.sendEvent(Events.E35);
             assertThat(instance.getCurrentState()).isEqualTo(States.S5).as("after creation machine has moved from state S3 to state S5 using event transition t4");

@@ -1,10 +1,14 @@
 package com.thekirschners.statusmachina.core;
 
+import com.thekirschners.statusmachina.core.api.MachineDef;
+import com.thekirschners.statusmachina.core.api.MachineInstance;
+import com.thekirschners.statusmachina.core.api.MachineInstanceBuilder;
+
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Consumer;
 
-public class MachineInstance<S, E> {
+public class MachineInstanceImpl<S, E> implements MachineInstance<S, E> {
     final String id;
 
     private MachineDef<S, E> def;
@@ -14,11 +18,11 @@ public class MachineInstance<S, E> {
 
     private S currentState;
 
-    public static <S, E> MachineInstanceBuilder<S, E> ofType(MachineDef<S, E> definition) {
-        return new MachineInstanceBuilder<>(definition);
+    public static <S, E> MachineInstanceBuilder ofType(MachineDef<S, E> definition) {
+        return new MachineInstanceBuilderImpl().ofType(definition);
     }
 
-    MachineInstance(MachineDef<S, E> def, Map<String, String> context) throws TransitionException {
+    MachineInstanceImpl(MachineDef<S, E> def, Map<String, String> context) throws TransitionException {
         this.id = UUID.randomUUID().toString();
         this.def = def;
         this.context = context;
@@ -31,7 +35,7 @@ public class MachineInstance<S, E> {
         tryStp();
     }
 
-    public MachineInstance(
+    public MachineInstanceImpl(
             String id,
             MachineDef<S, E> def,
             S currentState,
@@ -49,34 +53,42 @@ public class MachineInstance<S, E> {
         tryStp();
     }
 
+    @Override
     public String getId() {
         return id;
     }
 
+    @Override
     public S getCurrentState() {
         return currentState;
     }
 
+    @Override
     public Map<String, String> getContext() {
         return Collections.unmodifiableMap(context);
     }
 
+    @Override
     public List<TransitionRecord<S,E>> getHistory() {
         return Collections.unmodifiableList(history);
     }
 
+    @Override
     public Optional<Throwable> getError() {
         return error;
     }
 
+    @Override
     public MachineDef<S, E> getDef() {
         return def;
     }
 
+    @Override
     public boolean isErrorState() {
         return error.isPresent();
     }
 
+    @Override
     public void sendEvent(E event) throws TransitionException {
         Transition<S,E> transition = def.findEventTransion(currentState, event).orElseThrow(() -> new IllegalStateException("for machines of type " + def.getName() + " event " + event.toString() + " does not trigger any transition out of state " + currentState.toString()));
         final Optional<Consumer<Map<String, String>>> action = transition.getAction();
@@ -85,7 +97,7 @@ public class MachineInstance<S, E> {
             error = Optional.empty();
         } catch (Throwable t) {
             error = Optional.of(t);
-            throw new TransitionException(MachineInstance.this, transition);
+            throw new TransitionException(MachineInstanceImpl.this, transition);
         }
         this.currentState = transition.getTo();
         recordEventTransition(event);
@@ -105,7 +117,7 @@ public class MachineInstance<S, E> {
                 error = Optional.empty();
             } catch (Throwable t) {
                 error = Optional.of(t);
-                throw new TransitionException(MachineInstance.this, transition);
+                throw new TransitionException(MachineInstanceImpl.this, transition);
             }
         }
     }

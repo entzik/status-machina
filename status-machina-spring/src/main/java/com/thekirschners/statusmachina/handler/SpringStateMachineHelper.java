@@ -1,8 +1,11 @@
 package com.thekirschners.statusmachina.handler;
 
-import com.thekirschners.statusmachina.core.MachineDef;
-import com.thekirschners.statusmachina.core.MachineInstance;
+import com.thekirschners.statusmachina.core.MachineInstanceImpl;
 import com.thekirschners.statusmachina.core.TransitionException;
+import com.thekirschners.statusmachina.core.api.MachineDef;
+import com.thekirschners.statusmachina.core.api.MachineInstance;
+import com.thekirschners.statusmachina.core.spi.StateMachineLockService;
+import com.thekirschners.statusmachina.core.spi.StateMachineService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;

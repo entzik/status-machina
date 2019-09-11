@@ -1,11 +1,9 @@
 package com.thekirschners.statusmachina.handler.springjpa;
 
-import com.thekirschners.statusmachina.handler.StateMachineLockService;
+import com.thekirschners.statusmachina.core.spi.StateMachineLockService;
 import com.thekirschners.statusmachina.handler.springjpa.model.ExternalState;
 import com.thekirschners.statusmachina.handler.springjpa.repo.ExternalStateRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

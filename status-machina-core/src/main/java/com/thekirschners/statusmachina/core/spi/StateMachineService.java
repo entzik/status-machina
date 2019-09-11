@@ -1,8 +1,8 @@
-package com.thekirschners.statusmachina.handler;
+package com.thekirschners.statusmachina.core.spi;
 
-import com.thekirschners.statusmachina.core.MachineDef;
-import com.thekirschners.statusmachina.core.MachineInstance;
 import com.thekirschners.statusmachina.core.TransitionException;
+import com.thekirschners.statusmachina.core.api.MachineDef;
+import com.thekirschners.statusmachina.core.api.MachineInstance;
 
 import java.util.Map;
 public interface StateMachineService {

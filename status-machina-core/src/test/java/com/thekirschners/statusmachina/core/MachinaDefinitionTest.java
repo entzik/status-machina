@@ -11,7 +11,7 @@ public class MachinaDefinitionTest {
     final Transition<States, Events> t3 = new Transition<>(States.S3, States.S4, Events.E34);
     final Transition<States, Events> t4 = new Transition<>(States.S3, States.S5, Events.E35);
 
-    final MachineDef<States, Events> def = MachineDef.<States, Events>newBuilder()
+    final MachineDefImpl<States, Events> def = MachineDefImpl.<States, Events>newBuilder()
             .setName("toto")
             .states(States.values())
             .initialState(States.S1)
