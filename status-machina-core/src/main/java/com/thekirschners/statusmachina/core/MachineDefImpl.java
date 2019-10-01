@@ -214,11 +214,11 @@ public class MachineDefImpl<S,E> implements MachineDef<S, E> {
         public MachineDefImpl<S,E> build() {
             return new MachineDefImpl<>(
                     name,
-                    Collections.unmodifiableSet(allStates),
+                    new HashSet<>(allStates),
                     initialState,
-                    Collections.unmodifiableSet(terminalStates),
-                    Collections.unmodifiableSet(events),
-                    Collections.unmodifiableSet(transitions),
+                    new HashSet<>(terminalStates),
+                    new HashSet<>(events),
+                    new HashSet<>(transitions),
                     stateToString,
                     stringToState,
                     eventToString,

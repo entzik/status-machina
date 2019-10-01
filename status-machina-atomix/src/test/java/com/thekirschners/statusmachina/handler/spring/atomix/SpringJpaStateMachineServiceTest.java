@@ -1,4 +1,4 @@
-package com.thekirschners.statusmachina.handler.springjpa;
+package com.thekirschners.statusmachina.handler.spring.atomix;
 
 import com.thekirschners.statusmachina.TestSpringBootApp;
 import com.thekirschners.statusmachina.core.MachineDefImpl;
@@ -45,17 +45,14 @@ public class SpringJpaStateMachineServiceTest {
             .terminalStates(States.S4, States.S5)
             .events(Events.values())
             .transitions(t1, t2, t3, t4)
-            .setEventToString(Enum::name)
-            .setStringToEvent(Events::valueOf)
-            .setStateToString(Enum::name)
-            .setStringToState(States::valueOf)
+            .setEventToString(new EventsStringFunction())
+            .setStringToEvent(new StringEventsFunction())
+            .setStateToString(new StatesStringFunction())
+            .setStringToState(new StringStatesFunction())
             .build();
 
     @Autowired
     StateMachineService service;
-
-    @Autowired
-    StateMachineLockService lockService;
 
     @Test
     void testSaveStateMachine() {
@@ -80,14 +77,11 @@ public class SpringJpaStateMachineServiceTest {
             // create a state machine instance
             final MachineInstance<States, Events> instance = buildStateMachine();
             service.create(instance);
-            lockService.release(instance.getId());
 
             // lock / read / send event / update / releaase
-            lockService.lock(instance.getId());
             final MachineInstance<States, Events> created = service.read(def, instance.getId());
             created.sendEvent(Events.E23);
             service.update(created);
-            lockService.release(instance.getId());
 
             // read updated state machine from DB
             final MachineInstance<States, Events> updated = service.read(def, instance.getId());
@@ -102,42 +96,6 @@ public class SpringJpaStateMachineServiceTest {
         }
     }
 
-    @Test
-    void testStateMachineLockedAfterSaving() {
-        try {
-            final MachineInstance<States, Events> instance = buildStateMachine();
-            service.create(instance);
-
-            assertThatExceptionOfType(IllegalStateException.class)
-                    .isThrownBy(() -> lockService.lock(instance.getId()))
-                    .withMessageStartingWith("machine is locked by another instance, ID=")
-                    .as("new machines are locked by default, locking again should have thrown IllegalStateException");
-        } catch (TransitionException e) {
-            fail("machine was not created", e);
-        }
-    }
-
-    @Test
-    void testUnclockAndLockBack() {
-        try {
-            final MachineInstance<States, Events> instance = buildStateMachine();
-            service.create(instance);
-
-            // a new machine is locked so unlock it
-            lockService.release(instance.getId());
-
-            // now lock it back
-            lockService.lock(instance.getId());
-
-            // and make sure you can't lock it twice
-            assertThatExceptionOfType(IllegalStateException.class)
-                    .isThrownBy(() -> lockService.lock(instance.getId()))
-                    .withMessageStartingWith("machine is locked by another instance, ID=")
-                    .as("new machines are locked by default, locking again should have thrown IllegalStateException");
-        } catch (TransitionException e) {
-            fail("machine was not created", e);
-        }
-    }
 
     private MachineInstance<States, Events> buildStateMachine() throws TransitionException {
         final HashMap<String, String> context = new HashMap<>();
@@ -178,6 +136,34 @@ public class SpringJpaStateMachineServiceTest {
             this.context = stringStringMap;
             beenThere = true;
             return context;
+        }
+    }
+
+    public static class EventsStringFunction implements Function<Events, String> {
+        @Override
+        public String apply(Events events) {
+            return events.name();
+        }
+    }
+
+    public static class StringEventsFunction implements Function<String, Events> {
+        @Override
+        public Events apply(String s) {
+            return Events.valueOf(s);
+        }
+    }
+
+    public static class StatesStringFunction implements Function<States, String> {
+        @Override
+        public String apply(States states) {
+            return states.name();
+        }
+    }
+
+    public static class StringStatesFunction implements Function<String, States> {
+        @Override
+        public States apply(String s) {
+            return States.valueOf(s);
         }
     }
 }

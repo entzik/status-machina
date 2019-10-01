@@ -16,11 +16,17 @@ public interface MachineInstance<S, E> {
 
     List<TransitionRecord<S, E>> getHistory();
 
-    Optional<Throwable> getError();
+    Optional<String> getError();
 
     MachineDef<S, E> getDef();
 
     boolean isErrorState();
 
     void sendEvent(E event) throws TransitionException;
+
+    MachineInstance<S,E> deepClone() throws TransitionException;
+
+    MachineInstance<S,E> setVersion(long version);
+
+    long getVersion();
 }

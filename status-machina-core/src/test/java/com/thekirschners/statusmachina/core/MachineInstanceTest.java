@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -110,15 +111,10 @@ public class MachineInstanceTest {
         E23, E34, E35
     }
 
-    static class SpyAction implements Consumer<Map<String,String>> {
+    static class SpyAction implements Function<Map<String,String>, Map<String,String>> {
         private boolean beenThere = false;
         private Map<String, String> context;
 
-        @Override
-        public void accept(Map<String, String> stringStringMap) {
-            this.context = stringStringMap;
-            beenThere = true;
-        }
 
         public boolean hasBeenThere() {
             return beenThere;
@@ -130,6 +126,13 @@ public class MachineInstanceTest {
 
         public void reset() {
             beenThere = false;
+        }
+
+        @Override
+        public Map<String, String> apply(Map<String, String> stringStringMap) {
+            this.context = stringStringMap;
+            beenThere = true;
+            return context;
         }
     }
 }

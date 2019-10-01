@@ -3,14 +3,15 @@ package com.thekirschners.statusmachina.core;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class Transition<S,E> {
     private final S from;
     private final S to;
     private final Optional<E> event;
-    private Optional<Consumer<Map<String,String>>> action;
+    private Optional<Function<Map<String,String>, Map<String,String>>> action;
 
-    public Transition(S from, S to, E event, Consumer<Map<String,String>> action) {
+    public Transition(S from, S to, E event, Function<Map<String,String>, Map<String,String>> action) {
         this.from = from;
         this.to = to;
         this.event = Optional.of(event);
@@ -24,7 +25,7 @@ public class Transition<S,E> {
         this.action = Optional.empty();
     }
 
-    public Transition(S from, S to, Consumer<Map<String,String>> action) {
+    public Transition(S from, S to, Function<Map<String,String>, Map<String,String>> action) {
         this.from = from;
         this.to = to;
         this.event = Optional.empty();
@@ -54,7 +55,7 @@ public class Transition<S,E> {
         return !event.isPresent();
     }
 
-    public Optional<Consumer<Map<String, String>>> getAction() {
+    public Optional<Function<Map<String,String>, Map<String,String>>> getAction() {
         return action;
     }
 }

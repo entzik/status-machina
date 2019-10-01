@@ -6,7 +6,7 @@ import com.thekirschners.statusmachina.core.api.MachineInstanceBuilder;
 
 import java.time.Instant;
 import java.util.*;
-import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class MachineInstanceImpl<S, E> implements MachineInstance<S, E> {
     final String id;
@@ -14,7 +14,9 @@ public class MachineInstanceImpl<S, E> implements MachineInstance<S, E> {
     private MachineDef<S, E> def;
     private Map<String, String> context;
     private List<TransitionRecord<S,E>> history;
-    private Optional<Throwable> error;
+    private Optional<String> error;
+
+    private transient long version;
 
     private S currentState;
 
@@ -41,7 +43,7 @@ public class MachineInstanceImpl<S, E> implements MachineInstance<S, E> {
             S currentState,
             Map<String, String> context,
             List<TransitionRecord<S, E>> history,
-            Optional<Throwable> error
+            Optional<String> error
     ) throws TransitionException {
         this.id = id;
         this.def = def;
@@ -65,16 +67,16 @@ public class MachineInstanceImpl<S, E> implements MachineInstance<S, E> {
 
     @Override
     public Map<String, String> getContext() {
-        return Collections.unmodifiableMap(context);
+        return new HashMap<>(context);
     }
 
     @Override
     public List<TransitionRecord<S,E>> getHistory() {
-        return Collections.unmodifiableList(history);
+        return new ArrayList<>(history);
     }
 
     @Override
-    public Optional<Throwable> getError() {
+    public Optional<String> getError() {
         return error;
     }
 
@@ -91,17 +93,7 @@ public class MachineInstanceImpl<S, E> implements MachineInstance<S, E> {
     @Override
     public void sendEvent(E event) throws TransitionException {
         Transition<S,E> transition = def.findEventTransion(currentState, event).orElseThrow(() -> new IllegalStateException("for machines of type " + def.getName() + " event " + event.toString() + " does not trigger any transition out of state " + currentState.toString()));
-        final Optional<Consumer<Map<String, String>>> action = transition.getAction();
-        try {
-            action.ifPresent(mapConsumer -> mapConsumer.accept(context));
-            error = Optional.empty();
-        } catch (Throwable t) {
-            error = Optional.of(t);
-            throw new TransitionException(MachineInstanceImpl.this, transition);
-        }
-        this.currentState = transition.getTo();
-        recordEventTransition(event);
-
+        applyTransition(transition);
         tryStp();
     }
 
@@ -109,17 +101,21 @@ public class MachineInstanceImpl<S, E> implements MachineInstance<S, E> {
         Optional<Transition<S, E>> stpTransition;
         while ((stpTransition = def.findStpTransition(currentState)).isPresent()) {
             final Transition<S, E> transition = stpTransition.get();
-            final Optional<Consumer<Map<String, String>>> action = transition.getAction();
-            try {
-                action.ifPresent(mapConsumer -> mapConsumer.accept(context));
-                currentState = transition.getTo();
-                recordStpTransition();
-                error = Optional.empty();
-            } catch (Throwable t) {
-                error = Optional.of(t);
-                throw new TransitionException(MachineInstanceImpl.this, transition);
-            }
+            applyTransition(transition);
         }
+    }
+
+    private void applyTransition(Transition<S, E> transition) throws TransitionException {
+        final Optional<Function<Map<String,String>, Map<String,String>>> action = transition.getAction();
+        try {
+            context = action.map(mapConsumer -> mapConsumer.apply(context)).orElse(Collections.emptyMap());
+            error = Optional.empty();
+        } catch (Throwable t) {
+            error = Optional.of(t.getMessage());
+            throw new TransitionException(MachineInstanceImpl.this, transition);
+        }
+        currentState = transition.getTo();
+        recordStpTransition();
     }
 
     private boolean recordEventTransition(E event) {
@@ -128,6 +124,22 @@ public class MachineInstanceImpl<S, E> implements MachineInstance<S, E> {
     }
 
     private void recordStpTransition() {
-        history.add(new TransitionRecord<>(currentState, Instant.now()));
+//        history.add(new TransitionRecord<>(currentState, Instant.now()));
+    }
+
+    @Override
+    public MachineInstance<S, E> deepClone() throws TransitionException {
+        return new MachineInstanceImpl<>(id, def, currentState, new HashMap<>(context), Collections.emptyList(), error);
+    }
+
+    @Override
+    public long getVersion() {
+        return version;
+    }
+
+    @Override
+    public MachineInstance<S, E> setVersion(long version) {
+        this.version = version;
+        return this;
     }
 }
