@@ -5,6 +5,7 @@ import com.thekirschners.statusmachina.core.TransitionException;
 import com.thekirschners.statusmachina.core.api.MachineDef;
 import com.thekirschners.statusmachina.core.api.MachineInstance;
 import com.thekirschners.statusmachina.core.api.MachineInstanceBuilder;
+import com.thekirschners.statusmachina.core.api.MachineSnapshot;
 import com.thekirschners.statusmachina.core.spi.StateMachineService;
 import com.thekirschners.statusmachina.handler.springjpa.model.ExternalState;
 import com.thekirschners.statusmachina.handler.springjpa.repo.ExternalStateRepository;
@@ -12,11 +13,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
 public class SpringJpaStateMachineService implements StateMachineService {
+    public static final String ERROR_STATE = "__ERROR_STATE__";
     @Autowired
     ExternalStateRepository externalStateRepository;
 
@@ -50,15 +55,36 @@ public class SpringJpaStateMachineService implements StateMachineService {
         externalStateRepository.save(updatedState);
     }
 
+    @Override
+    public List<MachineSnapshot> findStale(long minutes) {
+        final long staleReference = Instant.now().toEpochMilli() - Duration.ofMinutes(minutes).toMillis();
+        final List<ExternalState> states = externalStateRepository.findAllByLastModifiedEpochLessThan(staleReference);
+        return getMachineSnapshots(states);
+    }
+
+    @Override
+    public List<MachineSnapshot> findFailed() {
+        final List<ExternalState> states = externalStateRepository.findAllByCurrentState(ERROR_STATE);
+        return getMachineSnapshots(states);
+    }
+
+    private List<MachineSnapshot> getMachineSnapshots(List<ExternalState> states) {
+        return states
+                .stream().map(state -> new MachineSnapshot(state.getType(), state.getId(), state.getCurrentState(), state.getContext(), state.getError()))
+                .collect(Collectors.toList());
+    }
 
     private <S, E> ExternalState extractExternalState(MachineInstance<S, E> machineInstance) {
         ExternalState currentState = new ExternalState();
 
-        currentState.setId(machineInstance.getId());
-        currentState.setType(machineInstance.getDef().getName());
-        currentState.setCurrentState(machineInstance.getDef().getStateToString().apply(machineInstance.getCurrentState()));
-        currentState.setContext(new HashMap<>(machineInstance.getContext()));
-        currentState.setLocked(true);
+        currentState
+                .setId(machineInstance.getId())
+                .setType(machineInstance.getDef().getName())
+                .setCurrentState(machineInstance.isErrorState() ? ERROR_STATE : machineInstance.getDef().getStateToString().apply(machineInstance.getCurrentState()))
+                .setError(machineInstance.getError().orElse("no error"))
+                .setContext(new HashMap<>(machineInstance.getContext()))
+                .setLocked(true)
+                .setLastModifiedEpoch(Instant.now().toEpochMilli());
 
         return currentState;
     }

@@ -26,9 +26,11 @@ public interface MachineInstance<S, E> {
 
     <P> void sendEvent(E event, P param) throws TransitionException;
 
+    void recoverFromError(S state, Map<String, String> context);
+
     MachineInstance<S,E> deepClone() throws TransitionException;
 
-    MachineInstance<S,E> setVersion(long version);
+    MachineInstance<S,E> setStateVersion(long version);
 
     long getVersion();
 }

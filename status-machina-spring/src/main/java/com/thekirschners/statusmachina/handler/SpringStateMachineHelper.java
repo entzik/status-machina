@@ -1,6 +1,5 @@
 package com.thekirschners.statusmachina.handler;
 
-import com.thekirschners.statusmachina.core.MachineInstanceImpl;
 import com.thekirschners.statusmachina.core.TransitionException;
 import com.thekirschners.statusmachina.core.api.MachineDef;
 import com.thekirschners.statusmachina.core.api.MachineInstance;
@@ -41,6 +40,8 @@ public class SpringStateMachineHelper {
         try {
             consumer.accept(machineInstance);
             service.update(machineInstance);
+        } catch (TransitionException e) {
+            service.update(machineInstance);
         } finally {
             lockService.release(machineInstance.getId());
         }
@@ -52,8 +53,10 @@ public class SpringStateMachineHelper {
         try {
             consumer.accept(machineInstance);
             service.update(machineInstance);
+        } catch (TransitionException e) {
+            service.update(machineInstance);
         } finally {
-            lockService.release(id);;
+            lockService.release(id);
         }
     }
 

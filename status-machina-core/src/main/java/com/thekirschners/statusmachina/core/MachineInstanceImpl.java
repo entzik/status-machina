@@ -100,6 +100,13 @@ public class MachineInstanceImpl<S, E> implements MachineInstance<S, E> {
         tryStp();
     }
 
+    @Override
+    public void recoverFromError(S state, Map<String, String> context) {
+        this.error = Optional.empty();
+        this.currentState = state;
+        this.context = context;
+    }
+
     private void tryStp() throws TransitionException {
         Optional<Transition<S, E>> stpTransition;
         while ((stpTransition = def.findStpTransition(currentState)).isPresent()) {
@@ -142,7 +149,7 @@ public class MachineInstanceImpl<S, E> implements MachineInstance<S, E> {
     }
 
     @Override
-    public MachineInstance<S, E> setVersion(long version) {
+    public MachineInstance<S, E> setStateVersion(long version) {
         this.version = version;
         return this;
     }

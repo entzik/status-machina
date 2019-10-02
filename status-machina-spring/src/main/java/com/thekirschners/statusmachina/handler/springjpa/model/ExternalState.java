@@ -28,15 +28,25 @@ public class ExternalState {
     @NotNull
     String currentState;
 
+    @Column(name = "error")
+    String error;
+
     @Column(name = "locked")
     @NotNull
     boolean locked;
 
     @ElementCollection(fetch = FetchType.EAGER)
-    @MapKeyColumn(name="name")
-    @Column(name="value")
-    @CollectionTable(name="example_attributes", joinColumns=@JoinColumn(name="machine_id"))
-    Map<String,String> context;
+    @MapKeyColumn(name = "name")
+    @Column(name = "value")
+    @CollectionTable(name = "example_attributes", joinColumns = @JoinColumn(name = "machine_id"))
+    Map<String, String> context;
+
+    /**
+     * milliseconds since last time this state was updated
+     */
+    @Column(name = "last_modified")
+    @NotNull
+    long lastModifiedEpoch;
 
     public ExternalState() {
     }
@@ -87,6 +97,24 @@ public class ExternalState {
 
     public ExternalState setContext(Map<String, String> context) {
         this.context = context;
+        return this;
+    }
+
+    public long getLastModifiedEpoch() {
+        return lastModifiedEpoch;
+    }
+
+    public ExternalState setLastModifiedEpoch(long lastModifiedEpoch) {
+        this.lastModifiedEpoch = lastModifiedEpoch;
+        return this;
+    }
+
+    public String getError() {
+        return error;
+    }
+
+    public ExternalState setError(String error) {
+        this.error = error;
         return this;
     }
 }

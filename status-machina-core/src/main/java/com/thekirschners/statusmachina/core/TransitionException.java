@@ -1,6 +1,6 @@
 package com.thekirschners.statusmachina.core;
 
-public class TransitionException extends Exception {
+public class TransitionException extends RuntimeException {
     private MachineInstanceImpl machineInstance;
     private Transition<?, ?> transition;
 
