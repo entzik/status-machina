@@ -1,9 +1,11 @@
 package com.thekirschners.statusmachina.core;
 
 
+import com.thekirschners.statusmachina.core.api.ErrorData;
 import com.thekirschners.statusmachina.core.api.MachineDef;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -14,14 +16,6 @@ import java.util.function.Predicate;
  * @param <E>
  */
 public class MachineDefImpl<S,E> implements MachineDef<S, E> {
-    /**
-     * the type of the object used to define the machine's state
-     */
-    private Class<S> stateType;
-    /**
-     * the type of the events received by the state machine
-     */
-    private Class<E> eventType;
     final private Set<S> allStates;
     final private S initialState;
     final private Set<S> terminalStates;
@@ -34,6 +28,7 @@ public class MachineDefImpl<S,E> implements MachineDef<S, E> {
     final private Function<String, S> stringToState;
     final private Function<E, String> eventToString;
     final private Function<String, E> stringToEvent;
+    private Consumer<ErrorData<S, E>> errorHandler;
 
     public static <S,E> Builder<S,E> newBuilder() {
         return new Builder<>();
@@ -46,18 +41,18 @@ public class MachineDefImpl<S,E> implements MachineDef<S, E> {
             Set<S> terminalStates,
             Set<E> events,
             Set<Transition<S, E>> transitions,
+            Consumer<ErrorData<S, E>> errorHandler,
             Function<S,String> stateToString,
             Function<String,S> stringToState,
             Function<E, String> eventToString,
             Function<String, E> stringToEvent
     ) {
         this.name = name;
+        this.errorHandler = errorHandler;
         this.stateToString = stateToString;
         this.stringToState = stringToState;
         this.eventToString = eventToString;
         this.stringToEvent = stringToEvent;
-        this.stateType = stateType;
-        this.eventType = eventType;
         this.allStates = allStates;
         this.initialState = initialState;
         this.terminalStates = terminalStates;
@@ -123,6 +118,11 @@ public class MachineDefImpl<S,E> implements MachineDef<S, E> {
     }
 
     @Override
+    public Consumer<ErrorData<S, E>> getErrorHandler() {
+        return errorHandler;
+    }
+
+    @Override
     public String getName() {
         return name;
     }
@@ -138,10 +138,12 @@ public class MachineDefImpl<S,E> implements MachineDef<S, E> {
 
         private String name;
 
-        Function<S,String> stateToString;
-        Function<String,S> stringToState;
-        Function<E, String> eventToString;
-        Function<String, E> stringToEvent;
+        private Consumer<ErrorData<S, E>> errorHandler;
+
+        private Function<S,String> stateToString;
+        private Function<String,S> stringToState;
+        private Function<E, String> eventToString;
+        private Function<String, E> stringToEvent;
 
 
         Builder() {
@@ -179,23 +181,28 @@ public class MachineDefImpl<S,E> implements MachineDef<S, E> {
             return this;
         }
 
-        public Builder<S, E> setStateToString(Function<S, String> stateToString) {
+        public Builder<S, E> stateToString(Function<S, String> stateToString) {
             this.stateToString = stateToString;
             return this;
         }
 
-        public Builder<S, E> setStringToState(Function<String, S> stringToState) {
+        public Builder<S, E> stringToState(Function<String, S> stringToState) {
             this.stringToState = stringToState;
             return this;
         }
 
-        public Builder<S, E> setEventToString(Function<E, String> eventToString) {
+        public Builder<S, E> eventToString(Function<E, String> eventToString) {
             this.eventToString = eventToString;
             return this;
         }
 
-        public Builder<S, E> setStringToEvent(Function<String, E> stringToEvent) {
+        public Builder<S, E> stringToEvent(Function<String, E> stringToEvent) {
             this.stringToEvent = stringToEvent;
+            return this;
+        }
+
+        public Builder<S, E> errorHandler(Consumer<ErrorData<S, E>> errorHandler) {
+            this.errorHandler = errorHandler;
             return this;
         }
 
@@ -212,13 +219,14 @@ public class MachineDefImpl<S,E> implements MachineDef<S, E> {
         }
 
         public MachineDefImpl<S,E> build() {
-            return new MachineDefImpl<>(
+            return new MachineDefImpl<S,E>(
                     name,
                     new HashSet<>(allStates),
                     initialState,
                     new HashSet<>(terminalStates),
                     new HashSet<>(events),
                     new HashSet<>(transitions),
+                    errorHandler == null ? errorData -> {} : errorHandler,
                     stateToString,
                     stringToState,
                     eventToString,

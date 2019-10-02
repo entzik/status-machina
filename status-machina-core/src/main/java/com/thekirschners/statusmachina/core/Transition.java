@@ -1,7 +1,10 @@
 package com.thekirschners.statusmachina.core;
 
+import com.thekirschners.statusmachina.core.api.TransitionAction;
+
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -9,9 +12,9 @@ public class Transition<S,E> {
     private final S from;
     private final S to;
     private final Optional<E> event;
-    private Optional<Function<Map<String,String>, Map<String,String>>> action;
+    private Optional<TransitionAction<?>> action;
 
-    public Transition(S from, S to, E event, Function<Map<String,String>, Map<String,String>> action) {
+    public Transition(S from, S to, E event, TransitionAction<?> action) {
         this.from = from;
         this.to = to;
         this.event = Optional.of(event);
@@ -25,7 +28,7 @@ public class Transition<S,E> {
         this.action = Optional.empty();
     }
 
-    public Transition(S from, S to, Function<Map<String,String>, Map<String,String>> action) {
+    public Transition(S from, S to, TransitionAction<?> action) {
         this.from = from;
         this.to = to;
         this.event = Optional.empty();
@@ -55,7 +58,7 @@ public class Transition<S,E> {
         return !event.isPresent();
     }
 
-    public Optional<Function<Map<String,String>, Map<String,String>>> getAction() {
+    public  Optional<TransitionAction<?>> getAction() {
         return action;
     }
 }

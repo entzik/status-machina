@@ -24,6 +24,8 @@ public interface MachineInstance<S, E> {
 
     void sendEvent(E event) throws TransitionException;
 
+    <P> void sendEvent(E event, P param) throws TransitionException;
+
     MachineInstance<S,E> deepClone() throws TransitionException;
 
     MachineInstance<S,E> setVersion(long version);

@@ -1,12 +1,8 @@
 package com.thekirschners.statusmachina.core;
 
-import com.thekirschners.statusmachina.core.api.MachineDef;
-import com.thekirschners.statusmachina.core.api.MachineInstance;
-import com.thekirschners.statusmachina.core.api.MachineInstanceBuilder;
+import com.thekirschners.statusmachina.core.api.*;
 
-import java.time.Instant;
 import java.util.*;
-import java.util.function.Function;
 
 public class MachineInstanceImpl<S, E> implements MachineInstance<S, E> {
     final String id;
@@ -93,7 +89,14 @@ public class MachineInstanceImpl<S, E> implements MachineInstance<S, E> {
     @Override
     public void sendEvent(E event) throws TransitionException {
         Transition<S,E> transition = def.findEventTransion(currentState, event).orElseThrow(() -> new IllegalStateException("for machines of type " + def.getName() + " event " + event.toString() + " does not trigger any transition out of state " + currentState.toString()));
-        applyTransition(transition);
+        applyTransition(transition, null);
+        tryStp();
+    }
+
+    @Override
+    public <P> void sendEvent(E event, P param) throws TransitionException {
+        Transition<S,E> transition = def.findEventTransion(currentState, event).orElseThrow(() -> new IllegalStateException("for machines of type " + def.getName() + " event " + event.toString() + " does not trigger any transition out of state " + currentState.toString()));
+        applyTransition(transition, param);
         tryStp();
     }
 
@@ -101,16 +104,17 @@ public class MachineInstanceImpl<S, E> implements MachineInstance<S, E> {
         Optional<Transition<S, E>> stpTransition;
         while ((stpTransition = def.findStpTransition(currentState)).isPresent()) {
             final Transition<S, E> transition = stpTransition.get();
-            applyTransition(transition);
+            applyTransition(transition, null);
         }
     }
 
-    private void applyTransition(Transition<S, E> transition) throws TransitionException {
-        final Optional<Function<Map<String,String>, Map<String,String>>> action = transition.getAction();
+    private <P> void applyTransition(Transition<S, E> transition, P param) throws TransitionException {
+        final Optional<TransitionAction<?>> action = transition.getAction();
         try {
-            context = action.map(mapConsumer -> mapConsumer.apply(context)).orElse(Collections.emptyMap());
+            context = action.map(mapConsumer -> ((TransitionAction<P>) mapConsumer).apply(context, param)).orElse(Collections.emptyMap());
             error = Optional.empty();
         } catch (Throwable t) {
+            def.getErrorHandler().accept(new DefaultErrorData<>(transition, param, t));
             error = Optional.of(t.getMessage());
             throw new TransitionException(MachineInstanceImpl.this, transition);
         }
@@ -141,5 +145,47 @@ public class MachineInstanceImpl<S, E> implements MachineInstance<S, E> {
     public MachineInstance<S, E> setVersion(long version) {
         this.version = version;
         return this;
+    }
+
+    private class DefaultErrorData<S, E, P> implements ErrorData<S, E> {
+        private final Transition<S, E> transition;
+        private final P param;
+        private final Throwable t;
+
+        public DefaultErrorData(Transition<S, E> transition, P param, Throwable t) {
+            this.transition = transition;
+            this.param = param;
+            this.t = t;
+        }
+
+        @Override
+        public S getFrom() {
+            return transition.getFrom();
+        }
+
+        @Override
+        public S getTo() {
+            return transition.getTo();
+        }
+
+        @Override
+        public Optional<E> getEvent() {
+            return transition.getEvent();
+        }
+
+        @Override
+        public Map<String, String> getContext() {
+            return new HashMap<>(context);
+        }
+
+        @Override
+        public P getParam() {
+            return param;
+        }
+
+        @Override
+        public String getMessage() {
+            return t.getMessage();
+        }
     }
 }

@@ -7,7 +7,7 @@ import com.thekirschners.statusmachina.core.Transition;
 import com.thekirschners.statusmachina.core.TransitionException;
 import com.thekirschners.statusmachina.core.api.MachineDef;
 import com.thekirschners.statusmachina.core.api.MachineInstance;
-import com.thekirschners.statusmachina.core.spi.StateMachineLockService;
+import com.thekirschners.statusmachina.core.api.TransitionAction;
 import com.thekirschners.statusmachina.core.spi.StateMachineService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,7 +17,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.*;
@@ -45,10 +44,10 @@ public class SpringJpaStateMachineServiceTest {
             .terminalStates(States.S4, States.S5)
             .events(Events.values())
             .transitions(t1, t2, t3, t4)
-            .setEventToString(new EventsStringFunction())
-            .setStringToEvent(new StringEventsFunction())
-            .setStateToString(new StatesStringFunction())
-            .setStringToState(new StringStatesFunction())
+            .eventToString(new EventsStringFunction())
+            .stringToEvent(new StringEventsFunction())
+            .stateToString(new StatesStringFunction())
+            .stringToState(new StringStatesFunction())
             .build();
 
     @Autowired
@@ -114,9 +113,10 @@ public class SpringJpaStateMachineServiceTest {
         E23, E34, E35
     }
 
-    static class SpyAction implements Function<Map<String,String>, Map<String,String>> {
+    static class SpyAction<P> implements TransitionAction<P> {
         private boolean beenThere = false;
         private Map<String, String> context;
+        private P p;
 
 
         public boolean hasBeenThere() {
@@ -132,12 +132,14 @@ public class SpringJpaStateMachineServiceTest {
         }
 
         @Override
-        public Map<String, String> apply(Map<String, String> stringStringMap) {
-            this.context = stringStringMap;
-            beenThere = true;
-            return context;
+        public Map<String, String> apply(Map<String, String> context, P p) {
+            this.context = context;
+            this.p = p;
+            this.beenThere = true;
+            return this.context;
         }
     }
+
 
     public static class EventsStringFunction implements Function<Events, String> {
         @Override

@@ -18,10 +18,10 @@ public class MachinaDefinitionTest {
             .terminalStates(States.S4, States.S5)
             .events(Events.values())
             .transitions(t1, t2, t3, t4)
-            .setEventToString(Enum::name)
-            .setStringToEvent(Events::valueOf)
-            .setStateToString(Enum::name)
-            .setStringToState(States::valueOf)
+            .eventToString(Enum::name)
+            .stringToEvent(Events::valueOf)
+            .stateToString(Enum::name)
+            .stringToState(States::valueOf)
             .build();
 
     @Test

@@ -4,6 +4,7 @@ import com.thekirschners.statusmachina.core.Transition;
 
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 public interface MachineDef<S, E> {
@@ -17,6 +18,14 @@ public interface MachineDef<S, E> {
 
     Set<Transition<S, E>> getTransitions();
 
+    Optional<Transition<S, E>> findStpTransition(S state);
+
+    Optional<Transition<S, E>> findEventTransion(S currentState, E event);
+
+    Consumer<ErrorData<S,E>> getErrorHandler();
+
+    String getName();
+
     Function<S, String> getStateToString();
 
     Function<String, S> getStringToState();
@@ -24,10 +33,4 @@ public interface MachineDef<S, E> {
     Function<E, String> getEventToString();
 
     Function<String, E> getStringToEvent();
-
-    Optional<Transition<S, E>> findStpTransition(S state);
-
-    Optional<Transition<S, E>> findEventTransion(S currentState, E event);
-
-    String getName();
 }
