@@ -8,4 +8,5 @@ import java.util.List;
 public interface ExternalStateRepository extends JpaRepository<ExternalState, String> {
     List<ExternalState> findAllByLastModifiedEpochLessThan(long lastModifiedEpoch);
     List<ExternalState> findAllByCurrentState(String currentSteter);
+    List<ExternalState> findAllByDone(boolean done);
 }

@@ -31,6 +31,9 @@ public class ExternalState {
     @Column(name = "error")
     String error;
 
+    @Column(name = "done")
+    boolean done;
+
     @Column(name = "locked")
     @NotNull
     boolean locked;
@@ -115,6 +118,20 @@ public class ExternalState {
 
     public ExternalState setError(String error) {
         this.error = error;
+        return this;
+    }
+
+    public ExternalState setVersion(int version) {
+        this.version = version;
+        return this;
+    }
+
+    public boolean isDone() {
+        return done;
+    }
+
+    public ExternalState setDone(boolean done) {
+        this.done = done;
         return this;
     }
 }

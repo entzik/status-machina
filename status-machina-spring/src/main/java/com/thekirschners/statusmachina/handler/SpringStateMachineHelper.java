@@ -3,6 +3,7 @@ package com.thekirschners.statusmachina.handler;
 import com.thekirschners.statusmachina.core.TransitionException;
 import com.thekirschners.statusmachina.core.api.MachineDef;
 import com.thekirschners.statusmachina.core.api.MachineInstance;
+import com.thekirschners.statusmachina.core.api.MachineSnapshot;
 import com.thekirschners.statusmachina.core.spi.StateMachineLockService;
 import com.thekirschners.statusmachina.core.spi.StateMachineService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -64,6 +66,18 @@ public class SpringStateMachineHelper {
 
     public <S,E> MachineInstance<S,E> read(String id, MachineDef<S, E> def) {
         return service.read(def, id);
+    }
+
+    public List<MachineSnapshot> findStale(long minutes) {
+        return service.findStale(minutes);
+    }
+
+    public List<MachineSnapshot> findFailed() {
+        return service.findFailed();
+    }
+
+    public List<MachineSnapshot> findTerminated() {
+        return service.findTerminated();
     }
 
     private void waitForMachine(String id) {

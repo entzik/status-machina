@@ -149,6 +149,11 @@ public class MachineInstanceImpl<S, E> implements MachineInstance<S, E> {
     }
 
     @Override
+    public boolean isTerminalState() {
+        return def.getTerminalStates().contains(currentState);
+    }
+
+    @Override
     public MachineInstance<S, E> setStateVersion(long version) {
         this.version = version;
         return this;

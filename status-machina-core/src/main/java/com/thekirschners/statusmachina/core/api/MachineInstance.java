@@ -33,4 +33,6 @@ public interface MachineInstance<S, E> {
     MachineInstance<S,E> setStateVersion(long version);
 
     long getVersion();
+
+    boolean isTerminalState();
 }

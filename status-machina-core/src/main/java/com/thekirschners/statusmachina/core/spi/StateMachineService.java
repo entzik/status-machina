@@ -15,4 +15,5 @@ public interface StateMachineService {
     <S,E> void update(MachineInstance<S, E> instance);
     List<MachineSnapshot> findStale(long minutes);
     List<MachineSnapshot> findFailed();
+    List<MachineSnapshot> findTerminated();
 }

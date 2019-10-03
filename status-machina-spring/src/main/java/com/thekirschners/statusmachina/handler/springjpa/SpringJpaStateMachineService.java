@@ -68,6 +68,12 @@ public class SpringJpaStateMachineService implements StateMachineService {
         return getMachineSnapshots(states);
     }
 
+    @Override
+    public List<MachineSnapshot> findTerminated() {
+        final List<ExternalState> states = externalStateRepository.findAllByDone(true);
+        return getMachineSnapshots(states);
+    }
+
     private List<MachineSnapshot> getMachineSnapshots(List<ExternalState> states) {
         return states
                 .stream().map(state -> new MachineSnapshot(state.getType(), state.getId(), state.getCurrentState(), state.getContext(), state.getError()))
@@ -84,6 +90,7 @@ public class SpringJpaStateMachineService implements StateMachineService {
                 .setError(machineInstance.getError().orElse("no error"))
                 .setContext(new HashMap<>(machineInstance.getContext()))
                 .setLocked(true)
+                .setDone(machineInstance.isTerminalState())
                 .setLastModifiedEpoch(Instant.now().toEpochMilli());
 
         return currentState;
