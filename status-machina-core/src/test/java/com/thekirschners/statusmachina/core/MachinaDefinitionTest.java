@@ -2,14 +2,14 @@ package com.thekirschners.statusmachina.core;
 
 import org.junit.jupiter.api.Test;
 
+import static com.thekirschners.statusmachina.core.Transition.*;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 
 public class MachinaDefinitionTest {
-    final Transition<States, Events> t1 = new Transition<>(States.S1, States.S2);
-    final Transition<States, Events> t2 = new Transition<>(States.S2, States.S3, Events.E23);
-    final Transition<States, Events> t3 = new Transition<>(States.S3, States.S4, Events.E34);
-    final Transition<States, Events> t4 = new Transition<>(States.S3, States.S5, Events.E35);
+    final Transition<States, Events> t1 = stp(States.S1, States.S2);
+    final Transition<States, Events> t2 = event(States.S2, States.S3, Events.E23);
+    final Transition<States, Events> t3 = event(States.S3, States.S4, Events.E34);
+    final Transition<States, Events> t4 = event(States.S3, States.S5, Events.E35);
 
     final MachineDefImpl<States, Events> def = MachineDefImpl.<States, Events>newBuilder()
             .setName("toto")

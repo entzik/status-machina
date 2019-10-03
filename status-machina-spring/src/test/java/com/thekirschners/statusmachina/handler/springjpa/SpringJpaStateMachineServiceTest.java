@@ -20,6 +20,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+import static com.thekirschners.statusmachina.core.Transition.event;
+import static com.thekirschners.statusmachina.core.Transition.stp;
 import static org.assertj.core.api.Assertions.*;
 
 @ExtendWith(SpringExtension.class)
@@ -33,10 +35,10 @@ public class SpringJpaStateMachineServiceTest {
     final SpyAction a3 = new SpyAction();
     final SpyAction a4 = new SpyAction();
 
-    final Transition<States, Events> t1 = new Transition<>(States.S1, States.S2, a1);
-    final Transition<States, Events> t2 = new Transition<>(States.S2, States.S3, Events.E23, a2);
-    final Transition<States, Events> t3 = new Transition<>(States.S3, States.S4, Events.E34, a3);
-    final Transition<States, Events> t4 = new Transition<>(States.S3, States.S5, Events.E35, a4);
+    final Transition<States, Events> t1 = stp(States.S1, States.S2, a1);
+    final Transition<States, Events> t2 = event(States.S2, States.S3, Events.E23, a2);
+    final Transition<States, Events> t3 = event(States.S3, States.S4, Events.E34, a3);
+    final Transition<States, Events> t4 = event(States.S3, States.S5, Events.E35, a4);
 
     final MachineDef<States, Events> def = MachineDefImpl.<States, Events>newBuilder()
             .setName("toto")

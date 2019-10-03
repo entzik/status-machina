@@ -14,28 +14,44 @@ public class Transition<S,E> {
     private final Optional<E> event;
     private Optional<TransitionAction<?>> action;
 
-    public Transition(S from, S to, E event, TransitionAction<?> action) {
+    public static <S,E> Transition<S,E> event(S from, S to, E event, TransitionAction<?> action) {
+        return new Transition<>(from, to, event, action);
+    }
+
+    public static <S,E> Transition<S,E> event(S from, S to, E event) {
+        return new Transition<>(from, to, event);
+    }
+
+    public static <S,E> Transition<S,E> stp(S from, S to, TransitionAction<?> action) {
+        return new Transition<>(from, to, action);
+    }
+
+    public static <S,E> Transition<S,E> stp(S from, S to) {
+        return new Transition<>(from, to);
+    }
+
+    private Transition(S from, S to, E event, TransitionAction<?> action) {
         this.from = from;
         this.to = to;
         this.event = Optional.of(event);
         this.action = Optional.of(action);
     }
 
-    public Transition(S from, S to, E event) {
+    private Transition(S from, S to, E event) {
         this.from = from;
         this.to = to;
         this.event = Optional.of(event);
         this.action = Optional.empty();
     }
 
-    public Transition(S from, S to, TransitionAction<?> action) {
+    private Transition(S from, S to, TransitionAction<?> action) {
         this.from = from;
         this.to = to;
         this.event = Optional.empty();
         this.action = Optional.of(action);
     }
 
-    public Transition(S from, S to) {
+    private Transition(S from, S to) {
         this.from = from;
         this.to = to;
         this.event = Optional.empty();

@@ -34,14 +34,16 @@ public class SpringStateMachineHelper {
         lockService.release(machineInstance.getId());
     }
 
-    public <S, E> void withNewStateMachine(MachineDef<S, E> def, Map<String, String> context, Consumer<MachineInstance<S, E>> consumer) throws TransitionException {
+    public <S, E> String withNewStateMachine(MachineDef<S, E> def, Map<String, String> context, Consumer<MachineInstance<S, E>> consumer) throws TransitionException {
         final MachineInstance<S, E> machineInstance = service.newMachine(def, context);
         service.create(machineInstance);
         try {
             consumer.accept(machineInstance);
             service.update(machineInstance);
+            return machineInstance.getId();
         } catch (TransitionException e) {
             service.update(machineInstance);
+            return machineInstance.getId();
         } finally {
             lockService.release(machineInstance.getId());
         }
@@ -58,6 +60,10 @@ public class SpringStateMachineHelper {
         } finally {
             lockService.release(id);
         }
+    }
+
+    public <S,E> MachineInstance<S,E> read(String id, MachineDef<S, E> def) {
+        return service.read(def, id);
     }
 
     private void waitForMachine(String id) {
