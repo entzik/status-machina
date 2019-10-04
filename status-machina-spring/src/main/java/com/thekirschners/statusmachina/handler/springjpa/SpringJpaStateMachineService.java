@@ -56,8 +56,8 @@ public class SpringJpaStateMachineService implements StateMachineService {
     }
 
     @Override
-    public List<MachineSnapshot> findStale(long minutes) {
-        final long staleReference = Instant.now().toEpochMilli() - Duration.ofMinutes(minutes).toMillis();
+    public List<MachineSnapshot> findStale(long seconds) {
+        final long staleReference = Instant.now().toEpochMilli() - Duration.ofSeconds(seconds).toMillis();
         final List<ExternalState> states = externalStateRepository.findAllByLastModifiedEpochLessThan(staleReference);
         return getMachineSnapshots(states);
     }
@@ -97,10 +97,13 @@ public class SpringJpaStateMachineService implements StateMachineService {
     }
 
     private <S, E> ExternalState updateExternalState(ExternalState currentState, MachineInstance<S, E> machineInstance) {
-        currentState.setId(machineInstance.getId());
-        currentState.setType(machineInstance.getDef().getName());
-        currentState.setCurrentState(machineInstance.getDef().getStateToString().apply(machineInstance.getCurrentState()));
-
+        currentState
+                .setType(machineInstance.getDef().getName())
+                .setCurrentState(machineInstance.isErrorState() ? ERROR_STATE : machineInstance.getDef().getStateToString().apply(machineInstance.getCurrentState()))
+                .setError(machineInstance.getError().orElse("no error"))
+                .setLocked(true)
+                .setDone(machineInstance.isTerminalState())
+                .setLastModifiedEpoch(Instant.now().toEpochMilli());
         applyTargetContext(currentState, machineInstance);
 
         return currentState;

@@ -68,8 +68,8 @@ public class SpringStateMachineHelper {
         return service.read(def, id);
     }
 
-    public List<MachineSnapshot> findStale(long minutes) {
-        return service.findStale(minutes);
+    public List<MachineSnapshot> findStale(long seconds) {
+        return service.findStale(seconds);
     }
 
     public List<MachineSnapshot> findFailed() {

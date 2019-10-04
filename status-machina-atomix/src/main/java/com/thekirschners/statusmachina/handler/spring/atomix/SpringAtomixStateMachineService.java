@@ -58,4 +58,9 @@ public class SpringAtomixStateMachineService implements StateMachineService {
     public List<MachineSnapshot> findFailed() {
         return null;
     }
+
+    @Override
+    public List<MachineSnapshot> findTerminated() {
+        return null;
+    }
 }

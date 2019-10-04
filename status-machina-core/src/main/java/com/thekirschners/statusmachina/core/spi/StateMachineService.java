@@ -13,7 +13,7 @@ public interface StateMachineService {
     <S,E> MachineInstance<S,E> read(MachineDef<S, E> def, String id) throws TransitionException;
     <S,E> void create(MachineInstance<S, E> instance);
     <S,E> void update(MachineInstance<S, E> instance);
-    List<MachineSnapshot> findStale(long minutes);
+    List<MachineSnapshot> findStale(long seconds);
     List<MachineSnapshot> findFailed();
     List<MachineSnapshot> findTerminated();
 }
