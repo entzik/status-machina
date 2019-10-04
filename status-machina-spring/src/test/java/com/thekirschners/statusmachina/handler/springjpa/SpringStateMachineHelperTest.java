@@ -90,6 +90,6 @@ public class SpringStateMachineHelperTest {
 
         // test terminated machines are properly found
         final List<MachineSnapshot> terminated = stateMachineHelper.findTerminated();
-        assertThat(terminated).hasSize(1);
+        assertThat(terminated).hasSize(1).extracting("id").containsExactly(id);
     }
 }
