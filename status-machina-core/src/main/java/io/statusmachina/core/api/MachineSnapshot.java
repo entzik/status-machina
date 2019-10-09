@@ -2,10 +2,13 @@ package io.statusmachina.core.api;
 
 import java.util.Map;
 
+/**
+ * an external representation of the state machine, returned by management and reporting services
+ */
 public class MachineSnapshot {
     final String type;
     final String id;
-    String crtState;
+    final String crtState;
     final Map<String,String> context;
     final String error;
 

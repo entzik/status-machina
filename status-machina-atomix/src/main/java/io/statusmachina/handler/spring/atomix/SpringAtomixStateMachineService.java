@@ -31,7 +31,7 @@ public class SpringAtomixStateMachineService implements StateMachineService {
     @Override
     public <S, E> Machine<S, E> read(MachineDefinition<S, E> def, String id) throws TransitionException {
         final Versioned<Machine<?,?>> versioned = stateMachinesMap.get(id);
-        return versioned == null ? null : ((Machine<S, E>) versioned.value()).deepClone().setStateVersion(versioned.version());
+        return versioned == null ? null : ((Machine<S, E>) versioned.value()).deepClone();
     }
 
     @Override
@@ -46,7 +46,7 @@ public class SpringAtomixStateMachineService implements StateMachineService {
 
     @Override
     public <S, E> void update(Machine<S, E> instance) {
-        stateMachinesMap.replace(instance.getId(), instance.getVersion(), instance);
+        stateMachinesMap.replace(instance.getId(), instance);
     }
 
     @Override

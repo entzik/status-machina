@@ -77,7 +77,7 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
     }
 
     @Override
-    public MachineDefinition<S, E> getDef() {
+    public MachineDefinition<S, E> getDefinition() {
         return def;
     }
 
@@ -139,13 +139,8 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
     }
 
     @Override
-    public Machine<S, E> deepClone() throws TransitionException {
+    public Machine<S, E> deepClone() {
         return new MachineInstanceImpl<>(id, def, currentState, new HashMap<>(context), Collections.emptyList(), error);
-    }
-
-    @Override
-    public long getVersion() {
-        return version;
     }
 
     @Override
@@ -153,11 +148,6 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
         return def.getTerminalStates().contains(currentState);
     }
 
-    @Override
-    public Machine<S, E> setStateVersion(long version) {
-        this.version = version;
-        return this;
-    }
 
     private class DefaultErrorData<S, E, P> implements ErrorData<S, E> {
         private final Transition<S, E> transition;
@@ -191,12 +181,12 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
         }
 
         @Override
-        public P getParam() {
+        public P getEventParameter() {
             return param;
         }
 
         @Override
-        public String getMessage() {
+        public String getErrorMessage() {
             return t.getMessage();
         }
     }

@@ -85,8 +85,8 @@ public class SpringJpaStateMachineService implements StateMachineService {
 
         currentState
                 .setId(machineInstance.getId())
-                .setType(machineInstance.getDef().getName())
-                .setCurrentState(machineInstance.isErrorState() ? ERROR_STATE : machineInstance.getDef().getStateToString().apply(machineInstance.getCurrentState()))
+                .setType(machineInstance.getDefinition().getName())
+                .setCurrentState(machineInstance.isErrorState() ? ERROR_STATE : machineInstance.getDefinition().getStateToString().apply(machineInstance.getCurrentState()))
                 .setError(machineInstance.getError().orElse("no error"))
                 .setContext(new HashMap<>(machineInstance.getContext()))
                 .setLocked(true)
@@ -98,8 +98,8 @@ public class SpringJpaStateMachineService implements StateMachineService {
 
     private <S, E> ExternalState updateExternalState(ExternalState currentState, Machine<S, E> machineInstance) {
         currentState
-                .setType(machineInstance.getDef().getName())
-                .setCurrentState(machineInstance.isErrorState() ? ERROR_STATE : machineInstance.getDef().getStateToString().apply(machineInstance.getCurrentState()))
+                .setType(machineInstance.getDefinition().getName())
+                .setCurrentState(machineInstance.isErrorState() ? ERROR_STATE : machineInstance.getDefinition().getStateToString().apply(machineInstance.getCurrentState()))
                 .setError(machineInstance.getError().orElse("no error"))
                 .setLocked(true)
                 .setDone(machineInstance.isTerminalState())
