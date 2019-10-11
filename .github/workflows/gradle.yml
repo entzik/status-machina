@@ -14,4 +14,4 @@ jobs:
       with:
         java-version: 11
     - name: Build with Gradle
-      run: ./gradlew build publish
+      run: ./gradlew -DGRP_USER=entzik@gmail.com -DGPR_API_KEY=${{ secrets.GITHUB_TOKEN }} build publish
