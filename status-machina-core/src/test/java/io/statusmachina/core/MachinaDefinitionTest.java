@@ -1,9 +1,13 @@
 package io.statusmachina.core;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExecutionCondition;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static io.statusmachina.core.Transition.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
+
 
 public class MachinaDefinitionTest {
     final Transition<States, Events> t1 = stp(States.S1, States.S2);
