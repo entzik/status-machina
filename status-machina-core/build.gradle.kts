@@ -69,8 +69,8 @@ publishing {
             name = "GitHub"
             url = uri("https://maven.pkg.github.com/entzik/status-machina")
             credentials {
-                username = project.findProperty("gpr.user") as String? ?: System.getenv("GPR_USER")
-                password = project.findProperty("gpr.key") as String? ?: System.getenv("GPR_API_KEY")
+                username = project.findProperty("github.username") as String? ?: System.getenv("GITHUB_USERNAME")
+                password = project.findProperty("github.api.token") as String? ?: System.getenv("GITHUB_API_TOKEN")
             }
         }
     }
