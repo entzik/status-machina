@@ -13,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 @Service
@@ -63,6 +62,14 @@ public class SpringStateMachineHelper {
         } finally {
             lockService.release(id);
         }
+    }
+
+    public <S,E> void sendEventToMachine(String id, MachineDefinition<S, E> def, E event) {
+        withMachine(id, def, seMachine -> seMachine.sendEvent(event));
+    }
+
+    public <S,E, P> void sendEventToMachine(String id, MachineDefinition<S, E> def, E event, P param) {
+        withMachine(id, def, seMachine -> seMachine.sendEvent(event, param));
     }
 
     public <S,E> Machine<S,E> read(String id, MachineDefinition<S, E> def) {
