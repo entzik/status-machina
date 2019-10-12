@@ -35,6 +35,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("javax.validation:validation-api")
 
+    implementation("com.google.guava:guava:28.1-jre")
+
     // Use JUnit test framework
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.junit.jupiter:junit-jupiter-api")

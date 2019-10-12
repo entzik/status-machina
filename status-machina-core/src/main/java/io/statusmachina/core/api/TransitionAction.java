@@ -1,5 +1,7 @@
 package io.statusmachina.core.api;
 
+import com.google.common.collect.ImmutableMap;
+
 import java.util.Map;
 import java.util.function.BiFunction;
 
@@ -12,5 +14,5 @@ import java.util.function.BiFunction;
  *
  * @param <P> the type of the event parameter
  */
-public interface TransitionAction<P> extends BiFunction<Map<String,String>, P, Map<String,String>> {
+public interface TransitionAction<P> extends BiFunction<ImmutableMap<String,String>, P, ImmutableMap<String,String>> {
 }

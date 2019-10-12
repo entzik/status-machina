@@ -1,5 +1,6 @@
 package io.statusmachina.handler.spring.atomix;
 
+import com.google.common.collect.ImmutableMap;
 import io.statusmachina.TestSpringBootApp;
 import io.statusmachina.core.MachineDefImpl;
 import io.statusmachina.core.MachineInstanceImpl;
@@ -115,7 +116,7 @@ public class SpringJpaStateMachineServiceTest {
 
     static class SpyAction<P> implements TransitionAction<P> {
         private boolean beenThere = false;
-        private Map<String, String> context;
+        private ImmutableMap<String, String> context;
         private P p;
 
 
@@ -132,7 +133,7 @@ public class SpringJpaStateMachineServiceTest {
         }
 
         @Override
-        public Map<String, String> apply(Map<String, String> context, P p) {
+        public ImmutableMap<String, String> apply(ImmutableMap<String, String> context, P p) {
             this.context = context;
             this.p = p;
             this.beenThere = true;

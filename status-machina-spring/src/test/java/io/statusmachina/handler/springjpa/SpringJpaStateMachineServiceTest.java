@@ -1,5 +1,6 @@
 package io.statusmachina.handler.springjpa;
 
+import com.google.common.collect.ImmutableMap;
 import io.statusmachina.TestSpringBootApp;
 import io.statusmachina.core.MachineDefImpl;
 import io.statusmachina.core.MachineInstanceImpl;
@@ -88,8 +89,8 @@ public class SpringJpaStateMachineServiceTest {
             // lock / read / send event / update / releaase
             lockService.lock(instance.getId());
             final Machine<States, Events> created = service.read(def, instance.getId());
-            created.sendEvent(Events.E23);
-            service.update(created);
+            final Machine<States, Events> tbu = created.sendEvent(Events.E23);
+            service.update(tbu);
             lockService.release(instance.getId());
 
             // read updated state machine from DB
@@ -161,7 +162,7 @@ public class SpringJpaStateMachineServiceTest {
 
     static class SpyAction<P> implements TransitionAction<P> {
         private boolean beenThere = false;
-        private Map<String, String> context;
+        private ImmutableMap<String, String> context;
         private P p;
 
 
@@ -178,7 +179,7 @@ public class SpringJpaStateMachineServiceTest {
         }
 
         @Override
-        public Map<String, String> apply(Map<String, String> context, P p) {
+        public ImmutableMap<String, String> apply(ImmutableMap<String, String> context, P p) {
             this.context = context;
             this.p = p;
             this.beenThere = true;

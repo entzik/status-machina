@@ -1,5 +1,6 @@
 package io.statusmachina.core;
 
+import com.google.common.collect.ImmutableMap;
 import io.statusmachina.core.api.MachineDefinition;
 import io.statusmachina.core.api.Machine;
 import io.statusmachina.core.api.TransitionAction;
@@ -64,8 +65,8 @@ public class MachineInstanceTest {
     void testEventTransition1() {
         try {
             final MachineInstanceImpl<States, Events> instance = new MachineInstanceImpl<>(def, new HashMap<>());
-            instance.sendEvent(Events.E23);
-            assertThat(instance.getCurrentState()).isEqualTo(States.S3).as("after creation machine has moved from state S2 to state S3 using event transition t2");
+            final Machine<States, Events> updated = instance.sendEvent(Events.E23);
+            assertThat(updated.getCurrentState()).isEqualTo(States.S3).as("after creation machine has moved from state S2 to state S3 using event transition t2");
             assertThat(a1.hasBeenThere()).isTrue();
             assertThat(a2.hasBeenThere()).isTrue();
         } catch (TransitionException e) {
@@ -77,9 +78,9 @@ public class MachineInstanceTest {
     void testEventTransition2() {
         try {
             final MachineInstanceImpl<States, Events> instance = new MachineInstanceImpl<>(def, new HashMap<>());
-            instance.sendEvent(Events.E23);
-            instance.sendEvent(Events.E34);
-            assertThat(instance.getCurrentState()).isEqualTo(States.S4).as("after creation machine has moved from state S3 to state S4 using event transition t3");
+            final Machine<States, Events> updated1 = instance.sendEvent(Events.E23);
+            final Machine<States, Events> updated2 = updated1.sendEvent(Events.E34);
+            assertThat(updated2.getCurrentState()).isEqualTo(States.S4).as("after creation machine has moved from state S3 to state S4 using event transition t3");
             assertThat(a1.hasBeenThere()).isTrue();
             assertThat(a2.hasBeenThere()).isTrue();
             assertThat(a3.hasBeenThere()).isTrue();
@@ -93,9 +94,9 @@ public class MachineInstanceTest {
     void testEventTransition3() {
         try {
             final MachineInstanceImpl<States, Events> instance = new MachineInstanceImpl<>(def, new HashMap<>());
-            instance.sendEvent(Events.E23);
-            instance.sendEvent(Events.E35);
-            assertThat(instance.getCurrentState()).isEqualTo(States.S5).as("after creation machine has moved from state S3 to state S5 using event transition t4");
+            final Machine<States, Events> updated1 = instance.sendEvent(Events.E23);
+            final Machine<States, Events> updated2 = updated1.sendEvent(Events.E35);
+            assertThat(updated2.getCurrentState()).isEqualTo(States.S5).as("after creation machine has moved from state S3 to state S5 using event transition t4");
             assertThat(a1.hasBeenThere()).isTrue();
             assertThat(a2.hasBeenThere()).isTrue();
             assertThat(a3.hasBeenThere()).isFalse();
@@ -115,7 +116,7 @@ public class MachineInstanceTest {
 
     static class SpyAction<P> implements TransitionAction<P> {
         private boolean beenThere = false;
-        private Map<String, String> context;
+        private ImmutableMap<String, String> context;
         private P p;
 
 
@@ -132,7 +133,7 @@ public class MachineInstanceTest {
         }
 
         @Override
-        public Map<String, String> apply(Map<String, String> context, P p) {
+        public ImmutableMap<String, String> apply(ImmutableMap<String, String> context, P p) {
             this.context = context;
             this.p = p;
             this.beenThere = true;

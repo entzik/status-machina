@@ -1,5 +1,6 @@
 package io.statusmachina.core;
 
+import com.google.common.collect.ImmutableMap;
 import io.statusmachina.core.api.MachineDefinition;
 import io.statusmachina.core.api.Machine;
 import io.statusmachina.core.api.MachineBuilder;
@@ -8,7 +9,7 @@ import java.util.Map;
 
 public class MachineInstanceBuilderImpl implements MachineBuilder {
     private MachineDefinition<?,?> definition;
-    private Map<String, String> context;
+    private ImmutableMap<String, String> context;
 
     @Override
     public <S,E> MachineBuilder ofType(MachineDefinition<S, E> definition) {
@@ -18,7 +19,7 @@ public class MachineInstanceBuilderImpl implements MachineBuilder {
 
     @Override
     public <S,E> MachineBuilder withContext(Map<String, String> context) {
-        this.context = context;
+        this.context = ImmutableMap.<String, String>builder().putAll(context).build();
         return this;
     }
 

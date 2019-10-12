@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 @Service
 @Transactional
@@ -36,13 +37,13 @@ public class SpringStateMachineHelper {
         lockService.release(machineInstance.getId());
     }
 
-    public <S, E> String withNewStateMachine(MachineDefinition<S, E> def, Map<String, String> context, Consumer<Machine<S, E>> consumer) throws TransitionException {
+    public <S, E> String withNewStateMachine(MachineDefinition<S, E> def, Map<String, String> context, Function<Machine<S, E>, Machine<S, E>> function) throws TransitionException {
         final Machine<S, E> machineInstance = service.newMachine(def, context);
         service.create(machineInstance);
         try {
-            consumer.accept(machineInstance);
-            service.update(machineInstance);
-            return machineInstance.getId();
+            final Machine<S, E> updated = function.apply(machineInstance);
+            service.update(updated);
+            return updated.getId();
         } catch (TransitionException e) {
             service.update(machineInstance);
             return machineInstance.getId();
@@ -51,12 +52,12 @@ public class SpringStateMachineHelper {
         }
     }
 
-    public <S,E> void withMachine(String id, MachineDefinition<S, E> def, Consumer<Machine<S, E>> consumer) throws TransitionException {
+    public <S,E> void withMachine(String id, MachineDefinition<S, E> def, Function<Machine<S, E>, Machine<S, E>> function) throws TransitionException {
         waitForMachine(id);
         final Machine<S, E> machineInstance = service.read(def, id);
         try {
-            consumer.accept(machineInstance);
-            service.update(machineInstance);
+            final Machine<S, E> updated = function.apply(machineInstance);
+            service.update(updated);
         } catch (TransitionException e) {
             service.update(machineInstance);
         } finally {
@@ -91,8 +92,6 @@ public class SpringStateMachineHelper {
                     Thread.sleep(retryDelay * (i + 1));
                 } catch (InterruptedException ex) { /* just ignore */ }
             }
-        if (notLocked)
-            lockService.lock(id);
     }
 
 }

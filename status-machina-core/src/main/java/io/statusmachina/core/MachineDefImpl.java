@@ -1,6 +1,7 @@
 package io.statusmachina.core;
 
 
+import com.google.common.collect.ImmutableSet;
 import io.statusmachina.core.api.ErrorData;
 import io.statusmachina.core.api.MachineDefinition;
 
@@ -16,13 +17,13 @@ import java.util.function.Predicate;
  * @param <E>
  */
 public class MachineDefImpl<S,E> implements MachineDefinition<S, E> {
-    final private Set<S> allStates;
+    final private ImmutableSet<S> allStates;
     final private S initialState;
-    final private Set<S> terminalStates;
+    final private ImmutableSet<S> terminalStates;
 
-    final private Set<E> events;
+    final private ImmutableSet<E> events;
 
-    final private Set<Transition<S,E>> transitions;
+    final private ImmutableSet<Transition<S,E>> transitions;
     final private String name;
     final private Function<S, String> stateToString;
     final private Function<String, S> stringToState;
@@ -53,11 +54,11 @@ public class MachineDefImpl<S,E> implements MachineDefinition<S, E> {
         this.stringToState = stringToState;
         this.eventToString = eventToString;
         this.stringToEvent = stringToEvent;
-        this.allStates = allStates;
+        this.allStates = ImmutableSet.<S>builder().addAll(allStates).build();
         this.initialState = initialState;
-        this.terminalStates = terminalStates;
-        this.events = events;
-        this.transitions = transitions;
+        this.terminalStates = ImmutableSet.<S>builder().addAll(terminalStates).build();
+        this.events = ImmutableSet.<E>builder().addAll(events).build();
+        this.transitions = ImmutableSet.<Transition<S,E>>builder().addAll(transitions).build();
     }
 
     @Override

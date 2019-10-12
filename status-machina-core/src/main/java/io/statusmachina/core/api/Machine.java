@@ -58,7 +58,7 @@ public interface Machine<S, E> {
      * current state or if an error occurs during the transition. this could happen while executing the action
      * associated with the transition.
      */
-    void sendEvent(E event) throws TransitionException;
+    Machine<S,E> sendEvent(E event) throws TransitionException;
 
     /**
      * delivers an event to the state machine.
@@ -71,7 +71,7 @@ public interface Machine<S, E> {
      * current state or if an error occurs during the transition. An error could occur when while executing the action
      * associated with the transition.
      */
-    <P> void sendEvent(E event, P param) throws TransitionException;
+    <P> Machine<S,E> sendEvent(E event, P param) throws TransitionException;
 
     /**
      * resets the machine to a particular state and context if it currently is in an error state. If this method is
@@ -82,14 +82,7 @@ public interface Machine<S, E> {
      * @param state the state the machine will transition to
      * @param context the context to be applied
      */
-    void recoverFromError(S state, Map<String, String> context);
-
-    /**
-     * creates a deep clone of the current machine - required for certain persistence / distributed frameworks
-     *
-     * @return a clone
-     */
-    Machine<S,E> deepClone();
+    Machine<S,E> recoverFromError(S state, Map<String, String> context);
 
     /**
      * returns true if the current state is a terminal one
