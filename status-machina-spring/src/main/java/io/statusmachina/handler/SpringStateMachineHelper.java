@@ -30,11 +30,13 @@ public class SpringStateMachineHelper {
     @Autowired
     StateMachineLockService lockService;
 
+/*
     public <S, E> void newStateMachine(MachineDefinition<S, E> def, Map<String, String> context) throws TransitionException {
         final Machine<S, E> machineInstance = service.newMachine(def, context);
         service.create(machineInstance);
         lockService.release(machineInstance.getId());
     }
+*/
 
     public <S, E> String withNewStateMachine(MachineDefinition<S, E> def, Map<String, String> context, Function<Machine<S, E>, Machine<S, E>> function) throws TransitionException {
         final Machine<S, E> machineInstance = service.newMachine(def, context);

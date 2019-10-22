@@ -34,18 +34,18 @@ public class SpringJpaStateMachineService implements StateMachineService {
     }
 
     @Override
+    public <S, E> void create(Machine<S, E> instance) {
+        final ExternalState entity = extractExternalState(instance);
+        externalStateRepository.save(entity);
+    }
+
+    @Override
     public <S, E> Machine<S, E> read(MachineDefinition<S, E> def, String id) throws TransitionException {
         final ExternalState externalState = externalStateRepository.findById(id).orElseThrow();
         final Map<String, String> context = externalState.getContext();
         final S currentstate = def.getStringToState().apply(externalState.getCurrentState());
 
         return new MachineInstanceImpl<>(id, def, currentstate, context, Collections.emptyList(), Optional.empty());
-    }
-
-    @Override
-    public <S, E> void create(Machine<S, E> instance) {
-        final ExternalState entity = extractExternalState(instance);
-        externalStateRepository.save(entity);
     }
 
     @Override
