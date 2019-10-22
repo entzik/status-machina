@@ -65,17 +65,48 @@ tasks.test {
 publishing {
     repositories {
         maven {
-            // change to point to your repo, e.g. http://my.org/repo
-            name = "GitHub"
-            url = uri("https://maven.pkg.github.com/entzik/status-machina")
+            name = "MavenCentral"
+            val releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+            val snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots"
+            url = uri(if (version.toString().endsWith("SNAPSHOT")) snapshotsRepoUrl else releasesRepoUrl)
             credentials {
-                username = project.findProperty("github.username") as String? ?: System.getenv("GITHUB_USERNAME")
-                password = project.findProperty("github.api.token") as String? ?: System.getenv("GITHUB_API_TOKEN")
+               username = System.getenv("MAVEN_UPLOAD_USER")
+               password = System.getenv("MAVEN_UPLOAD_PED")
             }
         }
     }
     publications {
-        register("mavenJava", MavenPublication::class) {
+        create<MavenPublication>("mavenJava") {
+
+            pom {
+                name.set("Status Machina Core")
+                description.set("Core component of Status Machina, a small, simple and pragmatic state machine library")
+                url.set("https://github.com/entzik/status-machina")
+/*
+                properties.set(mapOf(
+                        "myProp" to "value",
+                        "prop.with.dots" to "anotherValue"
+                ))
+*/
+                licenses {
+                    license {
+                        name.set("The Apache License, Version 2.0")
+                        url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+                    }
+                }
+                developers {
+                    developer {
+                        id.set("entzik ")
+                        name.set("Emil Kirschner")
+                    }
+                }
+                scm {
+                    connection.set("scm:git:https://github.com/entzik/status-machina.git")
+                    developerConnection.set("scm:git:https://github.com/entzik/status-machina.git")
+                    url.set("https://github.com/entzik/status-machina")
+                }
+            }
+
             from(components["java"])
             artifact(tasks["sourcesJar"])
             artifact(tasks["javadocJar"])
