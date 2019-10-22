@@ -9,6 +9,7 @@
 plugins {
     // Apply the java-library plugin to add support for Java Library
     `java-library`
+    `maven-publish`
     `idea`
     `eclipse`
     id("org.springframework.boot") version "2.1.6.RELEASE"
@@ -73,6 +74,9 @@ tasks.test {
     }
 }
 
+val MAVEN_UPLOAD_USER: String by project
+val MAVEN_UPLOAD_PWD: String by project
+
 publishing {
     repositories {
         maven {
@@ -81,46 +85,17 @@ publishing {
             val snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots"
             url = uri(if (version.toString().endsWith("SNAPSHOT")) snapshotsRepoUrl else releasesRepoUrl)
             credentials {
-               username = System.getenv("MAVEN_UPLOAD_USER")
-               password = System.getenv("MAVEN_UPLOAD_PED")
+                username = MAVEN_UPLOAD_USER
+                password = MAVEN_UPLOAD_PWD
             }
         }
     }
     publications {
         create<MavenPublication>("mavenJava") {
-
-            pom {
-                name.set("Status Machina Spring")
-                description.set("Spring integration for Status Machina, a small, simple and pragmatic state machine library")
-                url.set("https://github.com/entzik/status-machina")
-/*
-                properties.set(mapOf(
-                        "myProp" to "value",
-                        "prop.with.dots" to "anotherValue"
-                ))
-*/
-                licenses {
-                    license {
-                        name.set("The Apache License, Version 2.0")
-                        url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
-                    }
-                }
-                developers {
-                    developer {
-                        id.set("entzik ")
-                        name.set("Emil Kirschner")
-                    }
-                }
-                scm {
-                    connection.set("scm:git:https://github.com/entzik/status-machina.git")
-                    developerConnection.set("scm:git:https://github.com/entzik/status-machina.git")
-                    url.set("https://github.com/entzik/status-machina")
-                }
-            }
-
             from(components["java"])
             artifact(tasks["sourcesJar"])
             artifact(tasks["javadocJar"])
         }
     }
 }
+
