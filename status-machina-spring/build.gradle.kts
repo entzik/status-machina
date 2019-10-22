@@ -95,6 +95,38 @@ publishing {
             from(components["java"])
             artifact(tasks["sourcesJar"])
             artifact(tasks["javadocJar"])
+
+            pom {
+                name.set("Status Machina Spring")
+                description.set("Spring integration for Status Machina, a small, simple and pragmatic state machine for resilient microservices orchestration.")
+                url.set("https://github.com/entzik/status-machina")
+/*
+                properties.set(mapOf(
+                        "myProp" to "value",
+                        "prop.with.dots" to "anotherValue"
+                ))
+*/
+                licenses {
+                    license {
+                        name.set("The Apache License, Version 2.0")
+                        url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+                    }
+                }
+                developers {
+                    developer {
+                        id.set("entzik")
+                        name.set("Emil Kirschner")
+                        email.set("entzik@gmail.com")
+                    }
+                }
+                scm {
+                    connection.set("scm:git:https://github.com/entzik/status-machina.git")
+                    developerConnection.set("scm:git:https://github.com/entzik/status-machina.git")
+                    url.set("https://github.com/entzik/status-machina")
+                }
+
+            }
+
         }
     }
 }
