@@ -14,4 +14,4 @@ jobs:
       with:
         java-version: 11
     - name: Build with Gradle
-      run: ./gradlew -DMAVEN_UPLOAD_USER=${{ SONATYPE_USER }} build
+      run: ./gradlew -DMAVEN_UPLOAD_USER=${{ secrets.SONATYPE_USER }} build
