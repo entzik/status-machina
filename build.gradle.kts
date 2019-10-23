@@ -10,6 +10,7 @@ plugins {
     // Apply the java-library plugin to add support for Java Library
     `idea`
     `eclipse`
+    signing
 }
 
 

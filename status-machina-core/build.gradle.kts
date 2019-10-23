@@ -12,6 +12,7 @@ plugins {
     `maven-publish`
     `idea`
     `eclipse`
+    signing
     id("org.springframework.boot") version "2.1.6.RELEASE"
 }
 
@@ -35,7 +36,6 @@ dependencies {
     testRuntimeOnly("com.h2database:h2")
     testImplementation("org.assertj:assertj-core:3.4.1")
 }
-
 
 tasks.getByName("jar") {
     enabled = true
@@ -116,4 +116,11 @@ publishing {
             }
         }
     }
+}
+
+signing {
+    val PGP_SIGNING_KEY: String? by project
+    val PGP_SIGNING_PASSWORD: String? by project
+    useInMemoryPgpKeys(PGP_SIGNING_KEY, PGP_SIGNING_PASSWORD)
+    sign(publishing.publications["mavenJava"])
 }
