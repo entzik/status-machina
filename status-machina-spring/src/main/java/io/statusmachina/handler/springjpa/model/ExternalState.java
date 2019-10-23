@@ -5,7 +5,9 @@ import javax.validation.constraints.NotNull;
 import java.util.Map;
 
 @Entity
-@Table(name = "state_machine_states")
+@Table(name = "sm_states", indexes = {
+        @Index(columnList = "done")
+})
 public class ExternalState {
     @Id
     @Column(
@@ -41,7 +43,7 @@ public class ExternalState {
     @ElementCollection(fetch = FetchType.EAGER)
     @MapKeyColumn(name = "name")
     @Column(name = "value")
-    @CollectionTable(name = "example_attributes", joinColumns = @JoinColumn(name = "machine_id"))
+    @CollectionTable(name = "sm_context_entries", joinColumns = @JoinColumn(name = "machine_id"))
     Map<String, String> context;
 
     /**
