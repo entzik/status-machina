@@ -14,4 +14,4 @@ jobs:
       with:
         java-version: 11
     - name: Build and Publish
-      run: ./gradlew -PMAVEN_UPLOAD_USER=${{ secrets.SONATYPE_USER }} -PMAVEN_UPLOAD_PWD=${{ secrets.SONATYPE_PASSWORD }} build publish
+      run: ./gradlew -PMAVEN_UPLOAD_USER=${{ secrets.SONATYPE_USER }} -PMAVEN_UPLOAD_PWD=${{ secrets.SONATYPE_PASSWORD }}  -PPGP_SIGNING_KEY="${{ PGP_SIGNING_PASSWORD }}" -PPGP_SIGNING_PASSWORD="${{ secrets.PGP_SIGNING_KEY }}" build publish
