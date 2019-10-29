@@ -37,10 +37,10 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
     }
 
     MachineInstanceImpl(MachineDefinition<S, E> def, Map<String, String> context) throws TransitionException {
-        this(UUID.randomUUID().toString(), def, context);
+        this(def, UUID.randomUUID().toString(), context);
     }
 
-    MachineInstanceImpl(String id, MachineDefinition<S, E> def, Map<String, String> context) throws TransitionException {
+    MachineInstanceImpl(MachineDefinition<S, E> def,String id,  Map<String, String> context) throws TransitionException {
         this.def = def;
         final StateAndContext kickoff = kickoff(def.getInitialState(), ImmutableMap.<String, String>builder().putAll(context).build());
 

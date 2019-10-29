@@ -35,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 
 import static io.statusmachina.core.Transition.event;
 import static io.statusmachina.core.Transition.stp;
@@ -76,7 +77,35 @@ public class SpringStateMachineHelperTest {
 
     @Test
     @Transactional
-    public void testStateMachineHelper() {
+    public void testStateMachineHelper_newMachineWithId() {
+        final String fixedId = UUID.randomUUID().toString();
+        final String id = stateMachineHelper.newStateMachine(def, fixedId, new HashMap<>());
+        final Machine<States, Events> instance = stateMachineHelper.read(id, def);
+        assertThat(instance.getCurrentState()).isEqualTo(States.S2).as("states match");
+        assertThat(id).isEqualTo(fixedId).as("the desired ID was properly applied");
+    }
+
+    @Test
+    @Transactional
+    public void testStateMachineHelper_newMachine() {
+        final String id = stateMachineHelper.newStateMachine(def, new HashMap<>());
+        final Machine<States, Events> instance = stateMachineHelper.read(id, def);
+        assertThat(instance.getCurrentState()).isEqualTo(States.S2).as("states match");
+    }
+
+    @Test
+    @Transactional
+    public void testStateMachineHelper_processNewWithId() {
+        final String fixedId = UUID.randomUUID().toString();
+        final String id = stateMachineHelper.withNewStateMachine(def, fixedId, new HashMap<>(), sm -> sm.sendEvent(Events.E23));
+        final Machine<States, Events> instance = stateMachineHelper.read(id, def);
+        assertThat(instance.getCurrentState()).isEqualTo(States.S3).as("states match");
+        assertThat(id).isEqualTo(fixedId).as("the desired ID was properly applied");
+    }
+
+    @Test
+    @Transactional
+    public void testStateMachineHelper_processNew() {
         // test a state machine is created and the new machine properly processed
         final String id = stateMachineHelper.withNewStateMachine(def, new HashMap<>(), sm -> sm.sendEvent(Events.E23));
         final Machine<States, Events> instance = stateMachineHelper.read(id, def);

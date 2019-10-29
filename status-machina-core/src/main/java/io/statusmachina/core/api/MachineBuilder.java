@@ -43,6 +43,15 @@ public interface MachineBuilder {
     <S,E> MachineBuilder withContext(Map<String, String> context);
 
     /**
+     * specify an machine ID beforehand. calling this method is optional, it not called a UUID will be generated on the fly
+     * @param id the ID to be used for the machine
+     * @param <S> the type of machine state
+     * @param <E> the type of events accepted by the machine
+     * @return the updated machine builder
+     */
+    <S,E> MachineBuilder withId(String id);
+
+    /**
      * build a state machine machine off the specified type and context, and put it in the defined initial state.
      * IF STP transitions are definied out of the initial state, they will be executed.
      *
