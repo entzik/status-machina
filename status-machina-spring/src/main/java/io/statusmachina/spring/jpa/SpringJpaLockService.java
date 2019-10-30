@@ -14,11 +14,11 @@
  *
  */
 
-package io.statusmachina.handler.springjpa;
+package io.statusmachina.spring.jpa;
 
 import io.statusmachina.core.spi.StateMachineLockService;
-import io.statusmachina.handler.springjpa.model.ExternalState;
-import io.statusmachina.handler.springjpa.repo.ExternalStateRepository;
+import io.statusmachina.spring.jpa.model.ExternalState;
+import io.statusmachina.spring.jpa.repo.ExternalStateRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

@@ -1,0 +1,2 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+  io.statusmachina.spring.jpa.autoconfig.StatusMachinaAutoConfiguration

@@ -14,7 +14,7 @@
  *
  */
 
-package io.statusmachina.handler.springjpa.model;
+package io.statusmachina.spring.jpa.model;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;

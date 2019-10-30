@@ -1,31 +1,31 @@
 /*
  *
- * Copyright 2019 <---> Present Status Machina Contributors (https://github.com/entzik/status-machina/graphs/contributors)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * This software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
- * CONDITIONS OF ANY KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations under the License.
+ *  * Copyright 2019 <---> Present Status Machina Contributors (https://github.com/entzik/status-machina/graphs/contributors)
+ *  *
+ *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  * you may not use this file except in compliance with the License.
+ *  * You may obtain a copy of the License at
+ *  *
+ *  *     http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  * This software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+ *  * CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ *  * specific language governing permissions and limitations under the License.
  *
  */
 
-package io.statusmachina.handler.springjpa;
+package some.unrelated.app.tests;
 
-import io.statusmachina.TestSpringBootApp;
+import io.statusmachina.spring.jpa.SpringStateMachineHelper;
+import some.unrelated.app.TestSpringBootApp;
 import io.statusmachina.core.MachineDefImpl;
 import io.statusmachina.core.Transition;
 import io.statusmachina.core.api.MachineDefinition;
 import io.statusmachina.core.api.Machine;
 import io.statusmachina.core.api.MachineSnapshot;
-import io.statusmachina.handler.SpringStateMachineHelper;
-import io.statusmachina.handler.springjpa.SpringJpaStateMachineServiceTest.Events;
-import io.statusmachina.handler.springjpa.SpringJpaStateMachineServiceTest.SpyAction;
-import io.statusmachina.handler.springjpa.SpringJpaStateMachineServiceTest.States;
+import some.unrelated.app.tests.SpringJpaStateMachineServiceTest.Events;
+import some.unrelated.app.tests.SpringJpaStateMachineServiceTest.SpyAction;
+import some.unrelated.app.tests.SpringJpaStateMachineServiceTest.States;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;

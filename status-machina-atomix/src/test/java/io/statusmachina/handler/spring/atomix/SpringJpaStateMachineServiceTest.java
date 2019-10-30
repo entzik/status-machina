@@ -1,4 +1,4 @@
-package io.statusmachina.handler.spring.atomix;
+package io.statusmachina.spring.spring.atomix;
 
 import com.google.common.collect.ImmutableMap;
 import io.statusmachina.TestSpringBootApp;

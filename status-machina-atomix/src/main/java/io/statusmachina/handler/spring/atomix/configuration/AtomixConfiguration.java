@@ -1,4 +1,4 @@
-package io.statusmachina.handler.spring.atomix.configuration;
+package io.statusmachina.spring.spring.atomix.configuration;
 
 import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;

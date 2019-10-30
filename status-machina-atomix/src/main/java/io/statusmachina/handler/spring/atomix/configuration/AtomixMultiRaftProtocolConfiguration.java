@@ -1,4 +1,4 @@
-package io.statusmachina.handler.spring.atomix.configuration;
+package io.statusmachina.spring.spring.atomix.configuration;
 
 import io.atomix.protocols.raft.MultiRaftProtocol;
 import io.atomix.protocols.raft.ReadConsistency;

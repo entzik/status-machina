@@ -1,4 +1,4 @@
-package io.statusmachina.handler.spring.atomix;
+package io.statusmachina.spring.spring.atomix;
 
 import io.statusmachina.core.TransitionException;
 import io.statusmachina.core.api.MachineDefinition;
