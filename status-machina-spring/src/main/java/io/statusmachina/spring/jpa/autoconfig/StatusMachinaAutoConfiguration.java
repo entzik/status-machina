@@ -21,8 +21,10 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.retry.annotation.EnableRetry;
 
 @Configuration
+@EnableRetry
 @ComponentScan("io.statusmachina")
 @EnableJpaRepositories("io.statusmachina.spring.jpa.repo")
 @EntityScan("io.statusmachina.spring.jpa.model")

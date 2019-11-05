@@ -17,6 +17,6 @@
 package io.statusmachina.core.spi;
 
 public interface StateMachineLockService {
-    void lock(String id);
-    void release(String id);
+    boolean lock(String id);
+    boolean release(String id);
 }

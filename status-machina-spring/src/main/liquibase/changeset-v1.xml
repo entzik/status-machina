@@ -1,17 +1,17 @@
 <!--
-  ~ /*
-  ~  * Copyright 2019 <---> Present Status Machina Contributors (https://github.com/entzik/status-machina/graphs/contributors)
-  ~  *
-  ~  * Licensed under the Apache License, Version 2.0 (the "License");
-  ~  * you may not use this file except in compliance with the License.
-  ~  * You may obtain a copy of the License at
-  ~  *
-  ~  *     http://www.apache.org/licenses/LICENSE-2.0
-  ~  *
-  ~  * This software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-  ~  * CONDITIONS OF ANY KIND, either express or implied. See the License for the
-  ~  * specific language governing permissions and limitations under the License.
-  ~  */
+  
+   Copyright 2019  Present Status Machina Contributors (https://github.com/entzik/status-machina/graphs/contributors)
+  
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+  
+       http://www.apache.org/licenses/LICENSE-2.0
+  
+   This software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+   CONDITIONS OF ANY KIND, either express or implied. See the License for the
+   specific language governing permissions and limitations under the License.
+
   -->
 
 <databaseChangeLog
@@ -19,7 +19,7 @@
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.0.xsd http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
-    <changeSet id="1" author="ek">
+    <changeSet id="22" author="ek">
         <createTable tableName="sm_context_entries">
             <column name="machine_id" type="varchar(40)"></column>
             <column name="name" type="varchar(255)"></column>
@@ -29,9 +29,9 @@
                        constraintName="pk_sm_context_entries"
                        tableName="sm_context_entries" />
 
-        <createTable tableName="sm_context_entries">
+        <createTable tableName="sm_states">
             <column name="id" type="varchar(40)">
-                <constraints primaryKey="true" primaryKeyName="user_pk" nullable="false"/>
+                <constraints primaryKey="true" primaryKeyName="statemachine_pk" nullable="false"/>
             </column>
             <column name="version" type="bigint"></column>
             <column name="crt_state" type="varchar(255)"></column>
@@ -41,8 +41,5 @@
             <column name="locked" type="boolean"></column>
             <column name="typename" type="varchar(255)"></column>
         </createTable>
-        <createIndex tableName="user" indexName="user_login_ndx" unique="true">
-            <column name="done"></column>
-        </createIndex>
     </changeSet>
 </databaseChangeLog>

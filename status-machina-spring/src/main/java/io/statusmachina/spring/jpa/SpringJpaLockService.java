@@ -32,22 +32,26 @@ public class SpringJpaLockService implements StateMachineLockService {
     ExternalStateRepository externalStateRepository;
 
     @Override
-    public void lock(String id) {
+    public boolean lock(String id) {
         final ExternalState externalState = externalStateRepository.findById(id).orElseThrow();
         if (externalState.isLocked())
             throw new IllegalStateException("machine is locked by another instance, ID=" + id);
         else {
             externalState.setLocked(true);
             externalStateRepository.save(externalState);
+            return true;
         }
     }
 
     @Override
-    public void release(String id) {
+    public boolean release(String id) {
         final ExternalState externalState = externalStateRepository.findById(id).orElseThrow();
         if (!externalState.isLocked())
             throw new IllegalStateException("machine is not locked, ID=" + id);
-        externalState.setLocked(false);
-        externalStateRepository.save(externalState);
+        else {
+            externalState.setLocked(false);
+            externalStateRepository.save(externalState);
+            return true;
+        }
     }
 }

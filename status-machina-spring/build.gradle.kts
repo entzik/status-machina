@@ -35,6 +35,7 @@ dependencies {
     // implementation("com.google.guava:guava:26.0-jre")
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.retry:spring-retry")
     implementation("javax.validation:validation-api")
 
     implementation("com.google.guava:guava:28.1-jre")

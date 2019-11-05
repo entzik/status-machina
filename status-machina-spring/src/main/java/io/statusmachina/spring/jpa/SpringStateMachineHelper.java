@@ -23,7 +23,10 @@ import io.statusmachina.core.api.MachineSnapshot;
 import io.statusmachina.core.spi.StateMachineLockService;
 import io.statusmachina.core.spi.StateMachineService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.retry.RetryCallback;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,6 +48,10 @@ public class SpringStateMachineHelper {
 
     @Autowired
     StateMachineLockService lockService;
+
+    @Autowired
+    @Qualifier("sm-machine-acquisition-state-machine")
+    RetryTemplate lockRetryTemplate;
 
     public <S, E> String newStateMachine(MachineDefinition<S, E> def, String id, Map<String, String> context) throws TransitionException {
         final Machine<S, E> machineInstance = service.newMachine(def, id, context);
@@ -134,16 +141,6 @@ public class SpringStateMachineHelper {
     }
 
     private void waitForMachine(String id) {
-        boolean notLocked = true;
-        for (int i = 0; i < maxRetries && notLocked; i++)
-            try {
-                lockService.lock(id);
-                notLocked = false;
-            } catch (Exception e) {
-                try {
-                    Thread.sleep(retryDelay * (i + 1));
-                } catch (InterruptedException ex) { /* just ignore */ }
-            }
+        lockRetryTemplate.execute((RetryCallback<Boolean, IllegalStateException>) context -> lockService.lock(id));
     }
-
 }
