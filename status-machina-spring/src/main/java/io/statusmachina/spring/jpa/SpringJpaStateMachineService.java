@@ -21,11 +21,16 @@ import io.statusmachina.core.TransitionException;
 import io.statusmachina.core.api.*;
 import io.statusmachina.core.spi.MachinePersistenceCallback;
 import io.statusmachina.core.spi.StateMachineService;
+import io.statusmachina.spring.jpa.configuration.TransactionTemplateCnfiguration;
 import io.statusmachina.spring.jpa.model.ExternalState;
 import io.statusmachina.spring.jpa.repo.ExternalStateRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
+import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.annotation.PostConstruct;
@@ -49,6 +54,7 @@ public class SpringJpaStateMachineService<S, E> implements StateMachineService<S
     private ApplicationContext context;
 
     @Autowired
+    @Qualifier(TransactionTemplateCnfiguration.STATUS_MACHINA_TRANSACTION_TEMPLATE)
     private TransactionTemplate transactionTemplate;
 
     MachinePersistenceCallback<S, E> machinePersistenceCallback;
