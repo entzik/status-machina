@@ -19,36 +19,54 @@ package io.statusmachina.core;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.statusmachina.core.api.*;
+import io.statusmachina.core.spi.MachinePersistenceCallback;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 public class MachineInstanceImpl<S, E> implements Machine<S, E> {
     private final String id;
 
     private final MachineDefinition<S, E> def;
     private final ImmutableMap<String, String> context;
-    private final ImmutableList<TransitionRecord<S,E>> history;
+    private final ImmutableList<TransitionRecord<S, E>> history;
     private final Optional<String> error;
 
     private final S currentState;
+    private final MachinePersistenceCallback<S,E> persistenceCallback;
 
-    public static <S, E> MachineBuilder ofType(MachineDefinition<S, E> definition) {
-        return new MachineInstanceBuilderImpl().ofType(definition);
+    MachineInstanceImpl(
+            MachineDefinition<S, E> def,
+            MachinePersistenceCallback<S,E> persistenceCallback,
+            Map<String, String> context
+    ) throws Exception {
+        this(def, UUID.randomUUID().toString(), persistenceCallback, context);
     }
 
-    MachineInstanceImpl(MachineDefinition<S, E> def, Map<String, String> context) throws TransitionException {
-        this(def, UUID.randomUUID().toString(), context);
+    MachineInstanceImpl(
+            MachineDefinition<S, E> def,
+            String id,
+            MachinePersistenceCallback<S,E> persistenceCallback,
+            Map<String, String> context
+    ) throws Exception {
+        this(def, id, context, persistenceCallback);
     }
 
-    MachineInstanceImpl(MachineDefinition<S, E> def,String id,  Map<String, String> context) throws TransitionException {
+    MachineInstanceImpl(
+            MachineDefinition<S, E> def,
+            String id,
+            Map<String, String> context, MachinePersistenceCallback<S,E> persistenceCallback
+    ) throws Exception {
         this.def = def;
-        final StateAndContext kickoff = kickoff(def.getInitialState(), ImmutableMap.<String, String>builder().putAll(context).build());
 
         this.id = id;
-        this.history = ImmutableList.<TransitionRecord<S,E>>builder().build();
-        this.currentState = kickoff.getState();
-        this.context = kickoff.getContext();
+        this.history = ImmutableList.<TransitionRecord<S, E>>builder().build();
+        this.currentState = def.getInitialState();
+        this.context = ImmutableMap.<String, String>builder().putAll(context).build();
         this.error = Optional.empty();
+        this.persistenceCallback = persistenceCallback;
+
+        persistenceCallback.runInTransaction(() -> persistenceCallback.saveNew(this));
     }
 
     public MachineInstanceImpl(
@@ -57,33 +75,17 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
             S currentState,
             Map<String, String> context,
             List<TransitionRecord<S, E>> history,
-            Optional<String> error
+            Optional<String> error,
+            MachinePersistenceCallback<S,E> persistenceCallback
     ) throws TransitionException {
         this.def = def;
-        final StateAndContext kickoff = currentState == def.getInitialState() ?
-                kickoff(def.getInitialState(), ImmutableMap.<String, String>builder().putAll(context).build())
-                : new StateAndContext(currentState, ImmutableMap.<String, String>builder().putAll(context).build());
 
         this.id = id;
-        this.history = ImmutableList.<TransitionRecord<S,E>>builder().addAll(history).build();
+        this.history = ImmutableList.<TransitionRecord<S, E>>builder().addAll(history).build();
         this.error = error;
-        this.currentState = kickoff.getState();
-        this.context = kickoff.getContext();
-    }
-
-    private StateAndContext kickoff(S initialState, ImmutableMap<String,String> initialContext) {
-        S runningState = initialState;
-        ImmutableMap<String,String> runningContext = ImmutableMap.<String, String>builder().putAll(initialContext).build();
-        Optional<Transition<S,E>> transition;
-        while ((transition = def.findStpTransition(runningState)).isPresent()) {
-            final Transition<S, E> seTransition = transition.get();
-            final Optional<TransitionAction<?>> action = seTransition.getAction();
-            final ImmutableMap<String, String> tmpContext = ImmutableMap.<String, String>builder().putAll(runningContext).build();
-            runningContext = action.map(mapConsumer -> mapConsumer.apply(tmpContext, null)).orElse(tmpContext);
-            runningState = seTransition.getTo();
-        }
-
-        return new StateAndContext(runningState, runningContext);
+        this.currentState = currentState;
+        this.context = ImmutableMap.<String, String>builder().putAll(context).build();
+        this.persistenceCallback = persistenceCallback;
     }
 
     @Override
@@ -102,7 +104,7 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
     }
 
     @Override
-    public List<TransitionRecord<S,E>> getHistory() {
+    public List<TransitionRecord<S, E>> getHistory() {
         return new ArrayList<>(history);
     }
 
@@ -121,6 +123,14 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
         return error.isPresent();
     }
 
+    public Machine<S, E> start() {
+        if (currentState.equals(def.getInitialState()))
+            return tryStp();
+        else
+            throw new IllegalStateException("machine is already started");
+    }
+
+
     @Override
     public Machine<S,E>  sendEvent(E event) throws TransitionException {
         Transition<S,E> transition = def.findEventTransion(currentState, event).orElseThrow(() -> new IllegalStateException("for machines of type " + def.getName() + " event " + event.toString() + " does not trigger any transition out of state " + currentState.toString()));
@@ -133,44 +143,76 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
         return applyTransition(transition, param);
     }
 
+/*
     @Override
-    public Machine<S,E> recoverFromError(S state, Map<String, String> context) {
+    public Machine<S, E> sendEvent(E event) throws TransitionException {
+        return sendEvent(event);
+    }
+
+    @Override
+    public <P> Machine<S, E> sendEvent(E event, P param) throws TransitionException {
+        return sendEvent(event, param);
+    }
+*/
+
+    @Override
+    public Machine<S, E> recoverFromError(S state, Map<String, String> context) {
         Optional<String> newError = Optional.empty();
-        ImmutableMap<String,String> newContext = ImmutableMap.<String, String>builder().putAll(context).build();
+        ImmutableMap<String, String> newContext = ImmutableMap.<String, String>builder().putAll(context).build();
 
-        return new MachineInstanceImpl<S,E>(id, def, state, newContext, history, newError);
+        return new MachineInstanceImpl<S, E>(id, def, state, newContext, history, newError, persistenceCallback);
     }
 
-    private Machine<S,E> tryStp() throws TransitionException {
-        final Optional<Transition<S, E>> stpTransition = def.findStpTransition(currentState);
-        if (stpTransition.isPresent()) {
-            return applyTransition(stpTransition.get(), null);
-        } else
+    private Machine<S, E> tryStp() throws TransitionException {
+        if (this.isErrorState())
             return this;
-    }
-
-    private <P> Machine<S,E> applyTransition(Transition<S, E> transition, P param) throws TransitionException {
-        final Optional<TransitionAction<?>> action = transition.getAction();
-        try {
-            ImmutableMap<String, String> newContext = action.map(mapConsumer -> ((TransitionAction<P>) mapConsumer).apply(context, param)).orElse(context);
-            Optional<String> newError = Optional.empty();
-            S newState =  transition.getTo();
-            return new MachineInstanceImpl<>(id, def, newState, newContext, history, newError).tryStp();
-        } catch (Throwable t) {
-            def.getErrorHandler().accept(new DefaultErrorData<>(transition, param, t));
-            Optional<String> newError = Optional.of(t.getMessage());
-            return new MachineInstanceImpl<>(id, def, currentState, context, history, newError);
+        else {
+            final Optional<Transition<S, E>> stpTransition = def.findStpTransition(currentState);
+            if (stpTransition.isPresent()) {
+                return applyTransition(stpTransition.get(), null);
+            } else
+                return this;
         }
     }
+
+    private <P> Machine<S, E> applyTransition(Transition<S, E> transition, P param) throws TransitionException {
+        try {
+            final Machine<S, E> machine = persistenceCallback.runInTransaction(() -> {
+                final Optional<TransitionAction<?>> action = transition.getAction();
+                try {
+                    ImmutableMap<String, String> newContext = action.map(mapConsumer -> ((TransitionAction<P>) mapConsumer).apply(context, param)).orElse(context);
+                    Optional<String> newError = Optional.empty();
+                    S newState = transition.getTo();
+                    final MachineInstanceImpl<S, E> newMachine = new MachineInstanceImpl<>(id, def, newState, newContext, history, newError, persistenceCallback);
+                    return persistenceCallback.update(newMachine);
+                } catch (Throwable t) {
+                    def.getErrorHandler().accept(new DefaultErrorData<>(transition, param, t));
+                    Optional<String> newError = Optional.of(t.getMessage());
+                    final MachineInstanceImpl<S, E> newMachine = new MachineInstanceImpl<>(id, def, currentState, context, history, newError, persistenceCallback);
+                    return persistenceCallback.update(newMachine);
+                }
+            });
+            return ((MachineInstanceImpl) machine).tryStp();
+        } catch (Exception e) {
+            throw new TransitionException(this, transition, e);
+        }
+    }
+
 
     @Override
     public boolean isTerminalState() {
         return def.getTerminalStates().contains(currentState);
     }
 
+    private static class VoidMachineConsumer<S, E> implements Consumer<Machine<S, E>> {
+        @Override
+        public void accept(Machine<S, E> seMachine) {
+        }
+    }
+
     private class StateAndContext {
         private final S state;
-        private ImmutableMap<String,String> context;
+        private ImmutableMap<String, String> context;
 
         public StateAndContext(S state, ImmutableMap<String, String> context) {
             this.state = state;

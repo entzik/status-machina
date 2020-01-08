@@ -18,13 +18,14 @@ package io.statusmachina.spring.jpa.configuration;
 
 import io.statusmachina.core.MachineInstanceBuilderImpl;
 import io.statusmachina.core.api.MachineBuilder;
+import io.statusmachina.core.api.MachineBuilderProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class MachineBuilderConfiguration {
     @Bean
-    public MachineBuilder getStateMachineBuilder() {
-        return new MachineInstanceBuilderImpl();
+    public MachineBuilderProvider getStateMachineBuilder() {
+        return MachineInstanceBuilderImpl::new;
     }
 }

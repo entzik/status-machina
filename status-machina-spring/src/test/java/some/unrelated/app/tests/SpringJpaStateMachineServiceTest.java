@@ -17,15 +17,11 @@
 package some.unrelated.app.tests;
 
 import com.google.common.collect.ImmutableMap;
-import some.unrelated.app.TestSpringBootApp;
 import io.statusmachina.core.MachineDefImpl;
-import io.statusmachina.core.MachineInstanceImpl;
 import io.statusmachina.core.Transition;
-import io.statusmachina.core.TransitionException;
-import io.statusmachina.core.api.MachineDefinition;
 import io.statusmachina.core.api.Machine;
+import io.statusmachina.core.api.MachineDefinition;
 import io.statusmachina.core.api.TransitionAction;
-import io.statusmachina.core.spi.StateMachineLockService;
 import io.statusmachina.core.spi.StateMachineService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,20 +29,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.transaction.annotation.Transactional;
+import some.unrelated.app.TestSpringBootApp;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import static io.statusmachina.core.Transition.event;
 import static io.statusmachina.core.Transition.stp;
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(
         classes = TestSpringBootApp.class,
         webEnvironment = SpringBootTest.WebEnvironment.NONE
 )
-@Transactional
 public class SpringJpaStateMachineServiceTest {
     final SpyAction a1 = new SpyAction();
     final SpyAction a2 = new SpyAction();
@@ -72,16 +69,12 @@ public class SpringJpaStateMachineServiceTest {
             .build();
 
     @Autowired
-    StateMachineService service;
-
-    @Autowired
-    StateMachineLockService lockService;
+    StateMachineService<States,Events> service;
 
     @Test
     void testSaveStateMachine() {
         try {
             final Machine<States, Events> instance = buildStateMachine();
-            service.create(instance);
 
             final Machine<States, Events> read = service.read(def, instance.getId());
 
@@ -89,7 +82,7 @@ public class SpringJpaStateMachineServiceTest {
             assertThat(read.getContext()).containsExactly(instance.getContext().entrySet().toArray(new Map.Entry[instance.getContext().size()])).as("context matches");
             assertThat(read.getCurrentState()).isEqualTo(instance.getCurrentState()).as("states match");
 
-        } catch (TransitionException e) {
+        } catch (Exception e) {
             fail("machine was not created", e);
         }
     }
@@ -98,16 +91,11 @@ public class SpringJpaStateMachineServiceTest {
     void testUpdateStateMachine() {
         try {
             // create a state machine instance
-            final Machine<States, Events> instance = buildStateMachine();
-            service.create(instance);
-            lockService.release(instance.getId());
+            final Machine<States, Events> instance = buildStateMachine().start();
 
             // lock / read / send event / update / releaase
-            lockService.lock(instance.getId());
             final Machine<States, Events> created = service.read(def, instance.getId());
             final Machine<States, Events> tbu = created.sendEvent(Events.E23);
-            service.update(tbu);
-            lockService.release(instance.getId());
 
             // read updated state machine from DB
             final Machine<States, Events> updated = service.read(def, instance.getId());
@@ -117,54 +105,18 @@ public class SpringJpaStateMachineServiceTest {
             assertThat(updated.getContext()).containsExactly(instance.getContext().entrySet().toArray(new Map.Entry[instance.getContext().size()])).as("context matches");
             assertThat(updated.getCurrentState()).isEqualTo(States.S3).as("states match");
 
-        } catch (TransitionException e) {
+        } catch (Exception e) {
             fail("machine was not created", e);
         }
     }
 
-    @Test
-    void testStateMachineLockedAfterSaving() {
-        try {
-            final Machine<States, Events> instance = buildStateMachine();
-            service.create(instance);
 
-            assertThatExceptionOfType(IllegalStateException.class)
-                    .isThrownBy(() -> lockService.lock(instance.getId()))
-                    .withMessageStartingWith("machine is locked by another instance, ID=")
-                    .as("new machines are locked by default, locking again should have thrown IllegalStateException");
-        } catch (TransitionException e) {
-            fail("machine was not created", e);
-        }
-    }
-
-    @Test
-    void testUnclockAndLockBack() {
-        try {
-            final Machine<States, Events> instance = buildStateMachine();
-            service.create(instance);
-
-            // a new machine is locked so unlock it
-            lockService.release(instance.getId());
-
-            // now lock it back
-            lockService.lock(instance.getId());
-
-            // and make sure you can't lock it twice
-            assertThatExceptionOfType(IllegalStateException.class)
-                    .isThrownBy(() -> lockService.lock(instance.getId()))
-                    .withMessageStartingWith("machine is locked by another instance, ID=")
-                    .as("new machines are locked by default, locking again should have thrown IllegalStateException");
-        } catch (TransitionException e) {
-            fail("machine was not created", e);
-        }
-    }
-
-    private Machine<States, Events> buildStateMachine() throws TransitionException {
+    private Machine<States, Events> buildStateMachine() throws Exception {
         final HashMap<String, String> context = new HashMap<>();
         context.put("k1", "v1");
         context.put("k2", "v2");
         context.put("k3", "v3");
-        return MachineInstanceImpl.ofType(def).withContext(context).build();
+        return service.newMachine(def, context);
     }
 
 

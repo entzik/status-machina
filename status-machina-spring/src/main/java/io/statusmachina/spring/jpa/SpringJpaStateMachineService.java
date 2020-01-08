@@ -18,59 +18,74 @@ package io.statusmachina.spring.jpa;
 
 import io.statusmachina.core.MachineInstanceImpl;
 import io.statusmachina.core.TransitionException;
-import io.statusmachina.core.api.MachineDefinition;
-import io.statusmachina.core.api.Machine;
-import io.statusmachina.core.api.MachineBuilder;
-import io.statusmachina.core.api.MachineSnapshot;
+import io.statusmachina.core.api.*;
+import io.statusmachina.core.spi.MachinePersistenceCallback;
 import io.statusmachina.core.spi.StateMachineService;
 import io.statusmachina.spring.jpa.model.ExternalState;
 import io.statusmachina.spring.jpa.repo.ExternalStateRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
+import javax.annotation.PostConstruct;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 @Service
-@Transactional
-public class SpringJpaStateMachineService implements StateMachineService {
+public class SpringJpaStateMachineService<S, E> implements StateMachineService<S, E>{
     public static final String ERROR_STATE = "__ERROR_STATE__";
+
     @Autowired
     ExternalStateRepository externalStateRepository;
 
     @Autowired
-    MachineBuilder machineInstanceBuilder;
+    MachineBuilderProvider machineInstanceBuilderProvider;
 
-    @Override
-    public <S, E> Machine<S, E> newMachine(MachineDefinition<S, E> def, Map<String, String> context) throws TransitionException {
-        return machineInstanceBuilder.ofType(def).withContext(context).build();
+    @Autowired
+    private ApplicationContext context;
+
+    @Autowired
+    private TransactionTemplate transactionTemplate;
+
+    MachinePersistenceCallback<S, E> machinePersistenceCallback;
+
+    public SpringJpaStateMachineService() {
+    }
+
+    @PostConstruct
+    public void postConstruct() {
+        machinePersistenceCallback = new MyMachinePersistenceCallback<>(context.getBean(SpringJpaStateMachineService.class), transactionTemplate);
     }
 
     @Override
-    public <S, E> Machine<S, E> newMachine(MachineDefinition<S, E> def, String id, Map<String, String> context) throws TransitionException {
-        return machineInstanceBuilder.ofType(def).withContext(context).withId(id).build();
+    public Machine<S, E> newMachine(MachineDefinition<S, E> def, Map<String, String> context) throws Exception {
+        return machineInstanceBuilderProvider.getMachineBuilder().ofType(def).withContext(context).withPersistence(machinePersistenceCallback).build();
     }
 
     @Override
-    public <S, E> void create(Machine<S, E> instance) {
+    public Machine<S, E> newMachine(MachineDefinition<S, E> def, String id, Map<String, String> context) throws Exception {
+        return machineInstanceBuilderProvider.getMachineBuilder().ofType(def).withContext(context).withPersistence(machinePersistenceCallback).withId(id).build();
+    }
+
+    public void create(Machine<S, E> instance) {
         final ExternalState entity = extractExternalState(instance);
         externalStateRepository.save(entity);
     }
 
     @Override
-    public <S, E> Machine<S, E> read(MachineDefinition<S, E> def, String id) throws TransitionException {
+    public Machine<S, E> read(MachineDefinition<S, E> def, String id) throws TransitionException {
         final ExternalState externalState = externalStateRepository.findById(id).orElseThrow();
         final Map<String, String> context = externalState.getContext();
         final S currentstate = def.getStringToState().apply(externalState.getCurrentState());
 
-        return new MachineInstanceImpl<>(id, def, currentstate, context, Collections.emptyList(), Optional.empty());
+        return new MachineInstanceImpl<S, E>(id, def, currentstate, context, Collections.emptyList(), Optional.empty(), machinePersistenceCallback);
     }
 
-    @Override
-    public <S, E> void update(Machine<S, E> instance) {
+    public void update(Machine<S, E> instance) {
         final ExternalState currentState = externalStateRepository.findById(instance.getId()).orElseThrow();
         final ExternalState updatedState = updateExternalState(currentState, instance);
         externalStateRepository.save(updatedState);
@@ -94,6 +109,7 @@ public class SpringJpaStateMachineService implements StateMachineService {
         final List<ExternalState> states = externalStateRepository.findAllByDone(true);
         return getMachineSnapshots(states);
     }
+
 
     private List<MachineSnapshot> getMachineSnapshots(List<ExternalState> states) {
         return states
@@ -149,5 +165,38 @@ public class SpringJpaStateMachineService implements StateMachineService {
                 keysToRemove.add(currentKey);
         for (String keyToRemove : keysToRemove)
             crtContext.remove(keyToRemove);
+    }
+
+    private static class MyMachinePersistenceCallback<S, E> implements MachinePersistenceCallback<S, E> {
+        private SpringJpaStateMachineService stateMachineService;
+        private TransactionTemplate transactionTemplate;
+
+        public MyMachinePersistenceCallback(SpringJpaStateMachineService stateMachineService, TransactionTemplate transactionTemplate) {
+            this.stateMachineService = stateMachineService;
+            this.transactionTemplate = transactionTemplate;
+        }
+
+        @Override
+        public Machine<S, E> saveNew(Machine<S, E> machine) {
+            stateMachineService.create(machine);
+            return machine;
+        }
+
+        @Override
+        public Machine<S, E> update(Machine<S, E> machine) {
+            stateMachineService.update(machine);
+            return machine;
+        }
+
+        @Override
+        public <R> R runInTransaction(Callable<R> callable) throws Exception {
+            return transactionTemplate.execute(status -> {
+                try {
+                    return callable.call();
+                } catch (Exception e) {
+                    throw new IllegalStateException(e);
+                }
+            });
+        }
     }
 }

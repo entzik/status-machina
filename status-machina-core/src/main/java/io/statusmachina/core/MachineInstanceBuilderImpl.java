@@ -16,45 +16,74 @@
 
 package io.statusmachina.core;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.statusmachina.core.api.MachineDefinition;
 import io.statusmachina.core.api.Machine;
 import io.statusmachina.core.api.MachineBuilder;
+import io.statusmachina.core.spi.MachinePersistenceCallback;
 
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.function.Consumer;
 
-public class MachineInstanceBuilderImpl implements MachineBuilder {
-    private MachineDefinition<?,?> definition;
+public class MachineInstanceBuilderImpl<S,E> implements MachineBuilder<S,E> {
+    private MachineDefinition<S,E> definition;
     private ImmutableMap<String, String> context;
     private String id;
+    private  MachinePersistenceCallback<S,E> machinePersistenceCallback;
+
 
     @Override
-    public <S,E> MachineBuilder ofType(MachineDefinition<S, E> definition) {
+    public MachineBuilder<S,E> ofType(MachineDefinition<S, E> definition) {
         this.definition = definition;
         return this;
     }
 
     @Override
-    public <S,E> MachineBuilder withContext(Map<String, String> context) {
+    public MachineBuilder<S,E> withContext(Map<String, String> context) {
         this.context = ImmutableMap.<String, String>builder().putAll(context).build();
         return this;
     }
 
     @Override
-    public <S, E> MachineBuilder withId(String id) {
+    public MachineBuilder<S,E> withId(String id) {
         this.id = id;
         return this;
     }
 
     @Override
-    public <S,E> Machine<S,E> build() throws TransitionException {
+    public MachineBuilder<S,E> withPersistence(MachinePersistenceCallback<S,E> machinePersistenceCallback) {
+        this.machinePersistenceCallback = machinePersistenceCallback;
+        return this;
+    }
+
+    @Override
+    public Machine<S,E> build() throws Exception {
         if (definition == null)
             throw new IllegalStateException("a state machine definition must be provided in order for a state machine instance to be built");
         if (context == null)
             throw new IllegalStateException("a context must be provided in order for a state machine instance to be built");
-        if (id == null)
-            return new MachineInstanceImpl<S,E>((MachineDefinition<S, E>) definition, context);
-        else
-            return new MachineInstanceImpl<S,E>((MachineDefinition<S, E>) definition, id, context);
+        if (machinePersistenceCallback == null)
+            machinePersistenceCallback = new MachinePersistenceCallback<S, E>() {
+                @Override
+                public Machine<S, E> saveNew(Machine<S, E> machine) {
+                    return machine;
+                }
+
+                @Override
+                public Machine<S, E> update(Machine<S, E> machine) {
+                    return machine;
+                }
+
+                @Override
+                public <R> R runInTransaction(Callable<R> callable) throws Exception {
+                    return callable.call();
+                }
+            };
+        if (id == null) {
+            return new MachineInstanceImpl<S,E>(definition, machinePersistenceCallback, context);
+        } else
+            return new MachineInstanceImpl<S,E>(definition, id, machinePersistenceCallback, context);
     }
 }

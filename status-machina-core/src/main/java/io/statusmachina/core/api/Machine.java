@@ -22,6 +22,7 @@ import io.statusmachina.core.TransitionRecord;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 /**
  * defines a state machine
@@ -64,6 +65,8 @@ public interface Machine<S, E> {
      * @return true if the machine is in an error state, false otherwise
      */
     boolean isErrorState();
+
+    Machine<S, E> start();
 
     /**
      * delivers an event to the state machine.

@@ -47,73 +47,34 @@ public class SpringStateMachineHelper {
     StateMachineService service;
 
     @Autowired
-    StateMachineLockService lockService;
-
-    @Autowired
     @Qualifier("sm-machine-acquisition-state-machine")
     RetryTemplate lockRetryTemplate;
 
-    public <S, E> String newStateMachine(MachineDefinition<S, E> def, String id, Map<String, String> context) throws TransitionException {
-        final Machine<S, E> machineInstance = service.newMachine(def, id, context);
-        try {
-            service.create(machineInstance);
-            return machineInstance.getId();
-        } finally {
-            lockService.release(machineInstance.getId());
-        }
+    public <S, E> String newStateMachine(MachineDefinition<S, E> def, String id, Map<String, String> context) throws Exception {
+        final Machine<S, E> machineInstance = service.newMachine(def, id, context).start();
+        return machineInstance.getId();
     }
 
-    public <S, E> String newStateMachine(MachineDefinition<S, E> def, Map<String, String> context) throws TransitionException {
-        final Machine<S, E> machineInstance = service.newMachine(def, context);
-        try {
-            service.create(machineInstance);
-            return machineInstance.getId();
-        } finally {
-            lockService.release(machineInstance.getId());
-        }
+    public <S, E> String newStateMachine(MachineDefinition<S, E> def, Map<String, String> context) throws Exception {
+        final Machine<S, E> machineInstance = service.newMachine(def, context).start();
+        return machineInstance.getId();
     }
 
-    public <S, E> String withNewStateMachine(MachineDefinition<S, E> def, String id, Map<String, String> context, Function<Machine<S, E>, Machine<S, E>> function) throws TransitionException {
-        final Machine<S, E> machineInstance = service.newMachine(def, id, context);
-        service.create(machineInstance);
-        try {
-            final Machine<S, E> updated = function.apply(machineInstance);
-            service.update(updated);
-            return updated.getId();
-        } catch (TransitionException e) {
-            service.update(machineInstance);
-            return machineInstance.getId();
-        } finally {
-            lockService.release(machineInstance.getId());
-        }
+    public <S, E> String withNewStateMachine(MachineDefinition<S, E> def, String id, Map<String, String> context, Function<Machine<S, E>, Machine<S, E>> function) throws Exception {
+        final Machine<S, E> machineInstance = service.newMachine(def, id, context).start();
+        final Machine<S, E> updated = function.apply(machineInstance);
+        return updated.getId();
     }
 
-    public <S, E> String withNewStateMachine(MachineDefinition<S, E> def, Map<String, String> context, Function<Machine<S, E>, Machine<S, E>> function) throws TransitionException {
-        final Machine<S, E> machineInstance = service.newMachine(def, context);
-        service.create(machineInstance);
-        try {
-            final Machine<S, E> updated = function.apply(machineInstance);
-            service.update(updated);
-            return updated.getId();
-        } catch (TransitionException e) {
-            service.update(machineInstance);
-            return machineInstance.getId();
-        } finally {
-            lockService.release(machineInstance.getId());
-        }
+    public <S, E> String withNewStateMachine(MachineDefinition<S, E> def, Map<String, String> context, Function<Machine<S, E>, Machine<S, E>> function) throws Exception {
+        final Machine<S, E> machineInstance = service.newMachine(def, context).start();
+        final Machine<S, E> updated = function.apply(machineInstance);
+        return updated.getId();
     }
 
     public <S, E> void withMachine(String id, MachineDefinition<S, E> def, Function<Machine<S, E>, Machine<S, E>> function) throws TransitionException {
-        waitForMachine(id);
         final Machine<S, E> machineInstance = service.read(def, id);
-        try {
-            final Machine<S, E> updated = function.apply(machineInstance);
-            service.update(updated);
-        } catch (TransitionException e) {
-            service.update(machineInstance);
-        } finally {
-            lockService.release(id);
-        }
+        function.apply(machineInstance);
     }
 
     public <S, E> void sendEventToMachine(String id, MachineDefinition<S, E> def, E event) {
@@ -138,9 +99,5 @@ public class SpringStateMachineHelper {
 
     public List<MachineSnapshot> findTerminated() {
         return service.findTerminated();
-    }
-
-    private void waitForMachine(String id) {
-        lockRetryTemplate.execute((RetryCallback<Boolean, IllegalStateException>) context -> lockService.lock(id));
     }
 }

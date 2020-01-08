@@ -17,14 +17,16 @@
 package io.statusmachina.core;
 
 import com.google.common.collect.ImmutableMap;
-import io.statusmachina.core.api.MachineDefinition;
 import io.statusmachina.core.api.Machine;
+import io.statusmachina.core.api.MachineDefinition;
 import io.statusmachina.core.api.TransitionAction;
+import io.statusmachina.core.spi.MachinePersistenceCallback;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 import static io.statusmachina.core.Transition.event;
 import static io.statusmachina.core.Transition.stp;
@@ -42,6 +44,23 @@ public class MachineInstanceTest {
     final Transition<States, Events> t2 = event(States.S2, States.S3, Events.E23, a2);
     final Transition<States, Events> t3 = event(States.S3, States.S4, Events.E34, a3);
     final Transition<States, Events> t4 = event(States.S3, States.S5, Events.E35, a4);
+
+    final MachinePersistenceCallback<States, Events> machinePersistenceCallback = new MachinePersistenceCallback<>() {
+        @Override
+        public Machine<States, Events> saveNew(Machine<States, Events> machine) {
+            return null;
+        }
+
+        @Override
+        public Machine<States, Events> update(Machine<States, Events> machine) {
+            return machine;
+        }
+
+        @Override
+        public <R> R runInTransaction(Callable<R> callable) throws Exception {
+            return callable.call();
+        }
+    };
 
     final MachineDefinition<States, Events> def = MachineDefImpl.<States, Events>newBuilder()
             .setName("toto")
@@ -68,11 +87,11 @@ public class MachineInstanceTest {
     @Test
     void testInstantiationAndStp() {
         try {
-            final Machine<States, Events> instance = new MachineInstanceImpl<>(def, new HashMap<>());
+            final Machine<States, Events> instance = new MachineInstanceImpl<>(def, machinePersistenceCallback, new HashMap<>()).start();
             assertThat(instance.getId()).isNotEmpty();
             assertThat(instance.getCurrentState()).isEqualTo(States.S2).as("after creation machine has moved from state S1 to state S2 using STP transition t1");
             assertThat(a1.hasBeenThere()).isTrue();
-        } catch (TransitionException e) {
+        } catch (Exception e) {
             fail("machine was not instantiated", e);
         }
     }
@@ -80,12 +99,12 @@ public class MachineInstanceTest {
     @Test
     void testEventTransition1() {
         try {
-            final MachineInstanceImpl<States, Events> instance = new MachineInstanceImpl<>(def, new HashMap<>());
+            final Machine<States, Events> instance = new MachineInstanceImpl<>(def, machinePersistenceCallback, new HashMap<>()).start();
             final Machine<States, Events> updated = instance.sendEvent(Events.E23);
             assertThat(updated.getCurrentState()).isEqualTo(States.S3).as("after creation machine has moved from state S2 to state S3 using event transition t2");
             assertThat(a1.hasBeenThere()).isTrue();
             assertThat(a2.hasBeenThere()).isTrue();
-        } catch (TransitionException e) {
+        } catch (Exception e) {
             fail("machine was not instantiated", e);
         }
     }
@@ -93,7 +112,7 @@ public class MachineInstanceTest {
     @Test
     void testEventTransition2() {
         try {
-            final MachineInstanceImpl<States, Events> instance = new MachineInstanceImpl<>(def, new HashMap<>());
+            final Machine<States, Events> instance = new MachineInstanceImpl<>(def, machinePersistenceCallback, new HashMap<>()).start();
             final Machine<States, Events> updated1 = instance.sendEvent(Events.E23);
             final Machine<States, Events> updated2 = updated1.sendEvent(Events.E34);
             assertThat(updated2.getCurrentState()).isEqualTo(States.S4).as("after creation machine has moved from state S3 to state S4 using event transition t3");
@@ -101,7 +120,7 @@ public class MachineInstanceTest {
             assertThat(a2.hasBeenThere()).isTrue();
             assertThat(a3.hasBeenThere()).isTrue();
             assertThat(a4.hasBeenThere()).isFalse();
-        } catch (TransitionException e) {
+        } catch (Exception e) {
             fail("machine was not instantiated", e);
         }
     }
@@ -109,7 +128,7 @@ public class MachineInstanceTest {
     @Test
     void testEventTransition3() {
         try {
-            final MachineInstanceImpl<States, Events> instance = new MachineInstanceImpl<>(def, new HashMap<>());
+            final Machine<States, Events> instance = new MachineInstanceImpl<States, Events>(def, machinePersistenceCallback, new HashMap<>()).start();
             final Machine<States, Events> updated1 = instance.sendEvent(Events.E23);
             final Machine<States, Events> updated2 = updated1.sendEvent(Events.E35);
             assertThat(updated2.getCurrentState()).isEqualTo(States.S5).as("after creation machine has moved from state S3 to state S5 using event transition t4");
@@ -117,7 +136,7 @@ public class MachineInstanceTest {
             assertThat(a2.hasBeenThere()).isTrue();
             assertThat(a3.hasBeenThere()).isFalse();
             assertThat(a4.hasBeenThere()).isTrue();
-        } catch (TransitionException e) {
+        } catch (Exception e) {
             fail("machine was not instantiated", e);
         }
     }

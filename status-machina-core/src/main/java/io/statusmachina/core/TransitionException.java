@@ -24,4 +24,10 @@ public class TransitionException extends RuntimeException {
         this.machineInstance = machineInstance;
         this.transition = transition;
     }
+
+    public <S,E> TransitionException(MachineInstanceImpl<S, E> machineInstance, Transition<S, E> transition, Throwable cause) {
+        super(cause);
+        this.machineInstance = machineInstance;
+        this.transition = transition;
+    }
 }

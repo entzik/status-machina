@@ -36,9 +36,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static io.statusmachina.core.Transition.event;
 import static io.statusmachina.core.Transition.stp;
+import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
@@ -47,7 +49,6 @@ import static org.assertj.core.api.Assertions.fail;
         classes = TestSpringBootApp.class,
         webEnvironment = SpringBootTest.WebEnvironment.NONE
 )
-@Transactional
 public class SpringStateMachineHelperTest {
     final SpyAction a1 = new SpyAction();
     final SpyAction a2 = new SpyAction();
@@ -76,65 +77,79 @@ public class SpringStateMachineHelperTest {
     SpringStateMachineHelper stateMachineHelper;
 
     @Test
-    @Transactional
     public void testStateMachineHelper_newMachineWithId() {
         final String fixedId = UUID.randomUUID().toString();
-        final String id = stateMachineHelper.newStateMachine(def, fixedId, new HashMap<>());
-        final Machine<States, Events> instance = stateMachineHelper.read(id, def);
-        assertThat(instance.getCurrentState()).isEqualTo(States.S2).as("states match");
-        assertThat(id).isEqualTo(fixedId).as("the desired ID was properly applied");
+        System.out.println("fixedId = " + fixedId);
+        try {
+            final String id = stateMachineHelper.newStateMachine(def, fixedId, new HashMap<>());
+            final Machine<States, Events> instance = stateMachineHelper.read(id, def);
+            assertThat(instance.getCurrentState()).isEqualTo(States.S2).as("states match");
+            assertThat(id).isEqualTo(fixedId).as("the desired ID was properly applied");
+        } catch (Exception e) {
+            fail("", e);
+        }
     }
 
     @Test
-    @Transactional
     public void testStateMachineHelper_newMachine() {
-        final String id = stateMachineHelper.newStateMachine(def, new HashMap<>());
-        final Machine<States, Events> instance = stateMachineHelper.read(id, def);
-        assertThat(instance.getCurrentState()).isEqualTo(States.S2).as("states match");
+        try {
+            final String id = stateMachineHelper.newStateMachine(def, new HashMap<>());
+            final Machine<States, Events> instance = stateMachineHelper.read(id, def);
+            assertThat(instance.getCurrentState()).isEqualTo(States.S2).as("states match");
+        } catch (Exception e) {
+            fail("", e);
+        }
     }
 
     @Test
-    @Transactional
     public void testStateMachineHelper_processNewWithId() {
         final String fixedId = UUID.randomUUID().toString();
-        final String id = stateMachineHelper.withNewStateMachine(def, fixedId, new HashMap<>(), sm -> sm.sendEvent(Events.E23));
-        final Machine<States, Events> instance = stateMachineHelper.read(id, def);
-        assertThat(instance.getCurrentState()).isEqualTo(States.S3).as("states match");
-        assertThat(id).isEqualTo(fixedId).as("the desired ID was properly applied");
+        try {
+            final String id = stateMachineHelper.withNewStateMachine(def, fixedId, new HashMap<>(), sm -> sm.sendEvent(Events.E23));
+            final Machine<States, Events> instance = stateMachineHelper.read(id, def);
+            assertThat(instance.getCurrentState()).isEqualTo(States.S3).as("states match");
+            assertThat(id).isEqualTo(fixedId).as("the desired ID was properly applied");
+        } catch (Exception e) {
+            fail("", e);
+        }
     }
 
     @Test
-    @Transactional
     public void testStateMachineHelper_processNew() {
         // test a state machine is created and the new machine properly processed
-        final String id = stateMachineHelper.withNewStateMachine(def, new HashMap<>(), sm -> sm.sendEvent(Events.E23));
-        final Machine<States, Events> instance = stateMachineHelper.read(id, def);
-        assertThat(instance.getCurrentState()).isEqualTo(States.S3).as("states match");
-
-        // test terminated machines service does not return false positives
-        final List<MachineSnapshot> terminated0 = stateMachineHelper.findTerminated();
-        assertThat(terminated0).isEmpty();
-
-        // test stale machines are found
         try {
-            Thread.sleep(1200);
-        } catch (InterruptedException e) {
-            fail(e.getMessage());
+            final String id = stateMachineHelper.withNewStateMachine(def, new HashMap<>(), sm -> sm.sendEvent(Events.E23));
+            System.out.println("id = " + id);
+            final Machine<States, Events> instance = stateMachineHelper.read(id, def);
+            assertThat(instance.getCurrentState()).isEqualTo(States.S3).as("states match");
+
+            // test terminated machines service does not return false positives
+            final List<MachineSnapshot> terminated0 = stateMachineHelper.findTerminated();
+            assertThat(terminated0).isEmpty();
+
+            // test stale machines are found
+            try {
+                Thread.sleep(1200);
+            } catch (InterruptedException e) {
+                fail(e.getMessage());
+            }
+            final List<MachineSnapshot> stale = stateMachineHelper.findStale(1);
+            assertThat(stale.stream().map(MachineSnapshot::getId).collect(toList())).contains(instance.getId());
+
+            // test the stale machine service does not return false positives
+            final List<MachineSnapshot> stale2 = stateMachineHelper.findStale(60);
+            assertThat(stale2).isEmpty();
+
+            // test machine is properly updated
+            stateMachineHelper.withMachine(id, def, sm -> sm.sendEvent(Events.E34));
+            final Machine<States, Events> updated = stateMachineHelper.read(id, def);
+            assertThat(updated.getCurrentState()).isEqualTo(States.S4).as("states match");
+
+            // test terminated machines are properly found
+            final List<MachineSnapshot> terminated = stateMachineHelper.findTerminated();
+            assertThat(terminated).hasSize(1).extracting("id").containsExactly(id);
+        } catch (Exception e) {
+            fail("", e);
         }
-        final List<MachineSnapshot> stale = stateMachineHelper.findStale(1);
-        assertThat(stale).hasSize(1);
-
-        // test the stale machine service does not return false positives
-        final List<MachineSnapshot> stale2 = stateMachineHelper.findStale(60);
-        assertThat(stale2).isEmpty();
-
-        // test machine is properly updated
-        stateMachineHelper.withMachine(id, def, sm -> sm.sendEvent(Events.E34));
-        final Machine<States, Events> updated = stateMachineHelper.read(id, def);
-        assertThat(updated.getCurrentState()).isEqualTo(States.S4).as("states match");
-
-        // test terminated machines are properly found
-        final List<MachineSnapshot> terminated = stateMachineHelper.findTerminated();
-        assertThat(terminated).hasSize(1).extracting("id").containsExactly(id);
     }
 }
