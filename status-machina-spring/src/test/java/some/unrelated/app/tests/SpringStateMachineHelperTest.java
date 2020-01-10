@@ -1,22 +1,22 @@
 /*
+ *  Copyright 2019 <---> Present Status Machina Contributors (https://github.com/entzik/status-machina/graphs/contributors)
  *
- *  * Copyright 2019 <---> Present Status Machina Contributors (https://github.com/entzik/status-machina/graphs/contributors)
- *  *
- *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  * you may not use this file except in compliance with the License.
- *  * You may obtain a copy of the License at
- *  *
- *  *     http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  * This software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
- *  * CONDITIONS OF ANY KIND, either express or implied. See the License for the
- *  * specific language governing permissions and limitations under the License.
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  This software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+ *  CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ *  specific language governing permissions and limitations under the License.
  *
  */
 
 package some.unrelated.app.tests;
 
-import io.statusmachina.spring.jpa.SpringStateMachineHelper;
+import io.statusmachina.core.spi.StateMachineService;
+import io.statusmachina.spring.jpa.SpringJpaStateMachineService;
 import some.unrelated.app.TestSpringBootApp;
 import io.statusmachina.core.MachineDefImpl;
 import io.statusmachina.core.Transition;
@@ -31,18 +31,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static io.statusmachina.core.Transition.event;
 import static io.statusmachina.core.Transition.stp;
 import static java.util.stream.Collectors.toList;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.*;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(
@@ -74,17 +72,16 @@ public class SpringStateMachineHelperTest {
             .build();
 
     @Autowired
-    SpringStateMachineHelper stateMachineHelper;
+    StateMachineService service;
 
     @Test
     public void testStateMachineHelper_newMachineWithId() {
         final String fixedId = UUID.randomUUID().toString();
         System.out.println("fixedId = " + fixedId);
         try {
-            final String id = stateMachineHelper.newStateMachine(def, fixedId, new HashMap<>());
-            final Machine<States, Events> instance = stateMachineHelper.read(id, def);
+            service.newMachine(def, fixedId, Map.of()).start();
+            final Machine<States, Events> instance = service.read( def, fixedId);
             assertThat(instance.getCurrentState()).isEqualTo(States.S2).as("states match");
-            assertThat(id).isEqualTo(fixedId).as("the desired ID was properly applied");
         } catch (Exception e) {
             fail("", e);
         }
@@ -93,8 +90,8 @@ public class SpringStateMachineHelperTest {
     @Test
     public void testStateMachineHelper_newMachine() {
         try {
-            final String id = stateMachineHelper.newStateMachine(def, new HashMap<>());
-            final Machine<States, Events> instance = stateMachineHelper.read(id, def);
+            final String id = service.newMachine(def, new HashMap<>()).start().getId();
+            final Machine<States, Events> instance = service.read(def, id);
             assertThat(instance.getCurrentState()).isEqualTo(States.S2).as("states match");
         } catch (Exception e) {
             fail("", e);
@@ -105,10 +102,12 @@ public class SpringStateMachineHelperTest {
     public void testStateMachineHelper_processNewWithId() {
         final String fixedId = UUID.randomUUID().toString();
         try {
-            final String id = stateMachineHelper.withNewStateMachine(def, fixedId, new HashMap<>(), sm -> sm.sendEvent(Events.E23));
-            final Machine<States, Events> instance = stateMachineHelper.read(id, def);
+            final Machine machine = service.newMachine(def, fixedId, new HashMap<>()).start();
+            final String machineId = machine.getId();
+            machine.sendEvent(Events.E23);
+            final Machine<States, Events> instance = service.read(def, machineId);
             assertThat(instance.getCurrentState()).isEqualTo(States.S3).as("states match");
-            assertThat(id).isEqualTo(fixedId).as("the desired ID was properly applied");
+            assertThat(machineId).isEqualTo(fixedId).as("the desired ID was properly applied");
         } catch (Exception e) {
             fail("", e);
         }
@@ -118,13 +117,14 @@ public class SpringStateMachineHelperTest {
     public void testStateMachineHelper_processNew() {
         // test a state machine is created and the new machine properly processed
         try {
-            final String id = stateMachineHelper.withNewStateMachine(def, new HashMap<>(), sm -> sm.sendEvent(Events.E23));
-            System.out.println("id = " + id);
-            final Machine<States, Events> instance = stateMachineHelper.read(id, def);
+            final Machine machine = service.newMachine(def, new HashMap<>()).start();
+            final String machineId = machine.getId();
+            machine.sendEvent(Events.E23);
+            final Machine<States, Events> instance = service.read(def, machineId);
             assertThat(instance.getCurrentState()).isEqualTo(States.S3).as("states match");
 
             // test terminated machines service does not return false positives
-            final List<MachineSnapshot> terminated0 = stateMachineHelper.findTerminated();
+            final List<MachineSnapshot> terminated0 = service.findTerminated();
             assertThat(terminated0).isEmpty();
 
             // test stale machines are found
@@ -133,21 +133,22 @@ public class SpringStateMachineHelperTest {
             } catch (InterruptedException e) {
                 fail(e.getMessage());
             }
-            final List<MachineSnapshot> stale = stateMachineHelper.findStale(1);
+            final List<MachineSnapshot> stale = service.findStale(1);
             assertThat(stale.stream().map(MachineSnapshot::getId).collect(toList())).contains(instance.getId());
 
             // test the stale machine service does not return false positives
-            final List<MachineSnapshot> stale2 = stateMachineHelper.findStale(60);
+            final List<MachineSnapshot> stale2 = service.findStale(60);
             assertThat(stale2).isEmpty();
 
             // test machine is properly updated
-            stateMachineHelper.withMachine(id, def, sm -> sm.sendEvent(Events.E34));
-            final Machine<States, Events> updated = stateMachineHelper.read(id, def);
+            final Machine<States, Events> instance2 = service.read(def, machineId);
+            instance2.sendEvent(Events.E34);
+            final Machine<States, Events> updated = service.read(def, machineId);
             assertThat(updated.getCurrentState()).isEqualTo(States.S4).as("states match");
 
             // test terminated machines are properly found
-            final List<MachineSnapshot> terminated = stateMachineHelper.findTerminated();
-            assertThat(terminated).hasSize(1).extracting("id").containsExactly(id);
+            final List<MachineSnapshot> terminated = service.findTerminated();
+            assertThat(terminated).hasSize(1).extracting("id").containsExactly(machineId);
         } catch (Exception e) {
             fail("", e);
         }
