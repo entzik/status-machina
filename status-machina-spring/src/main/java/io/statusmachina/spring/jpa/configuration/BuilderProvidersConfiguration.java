@@ -16,16 +16,23 @@
 
 package io.statusmachina.spring.jpa.configuration;
 
+import io.statusmachina.core.EnumBasedMachineDefinitionBuilderProvider;
 import io.statusmachina.core.MachineInstanceBuilderImpl;
 import io.statusmachina.core.api.MachineBuilder;
 import io.statusmachina.core.api.MachineBuilderProvider;
+import io.statusmachina.core.api.MachineDefinitionBuilderProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class MachineBuilderConfiguration {
+public class BuilderProvidersConfiguration {
     @Bean
     public MachineBuilderProvider getStateMachineBuilder() {
         return MachineInstanceBuilderImpl::new;
+    }
+
+    @Bean
+    public MachineDefinitionBuilderProvider getMachineDefinitionBuilderProvider() {
+        return new EnumBasedMachineDefinitionBuilderProvider();
     }
 }

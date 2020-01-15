@@ -24,11 +24,77 @@ import io.statusmachina.core.api.MachineSnapshot;
 import java.util.Map;
 import java.util.List;
 
-public interface StateMachineService<S,E> {
-    Machine<S,E> newMachine(MachineDefinition<S, E> type, Map<String, String> context) throws Exception;
-    Machine<S,E> newMachine(MachineDefinition<S, E> type, String id, Map<String, String> context) throws Exception;
-    Machine<S,E> read(MachineDefinition<S, E> def, String id) throws TransitionException;
+/**
+ * An interface that provides state machine lifecycle services. it allows to create and find state machines.
+ * typical implementations will extract some sort of internal state and persist it in a database or distributed cache
+ *
+ * @param <S> the java type that defines the states of the machine
+ * @param <E> the java type that defines events the machine reacts to
+ */
+public interface StateMachineService<S, E> {
+    /**
+     * Create a state machine of the specified type and with the specified initial context.
+     * <p>
+     * Specific implementations may (should) persist the machine as well
+     * <p>
+     * An ID should be automatically assigned to this machine
+     * <p>
+     * The machine must automatically execute any STP transitions configured our of the initial state
+     *
+     * @param type    the machine definition
+     * @param context the initial context
+     * @return an instance of the machine
+     * @throws Exception is thrown if anything goes wrong
+     */
+    Machine<S, E> newMachine(MachineDefinition<S, E> type, Map<String, String> context) throws Exception;
+
+    /**
+     * Create a state machine of the specified type and with the specified initial context.
+     * <p>
+     * Specific implementations may (should) persist the machine as well
+     * <p>
+     * The machine must automatically execute any STP transitions configured our of the initial state
+     *
+     * @param type    the machine definition
+     * @param id      an ID the user wants to be assigned to this machine
+     * @param context the initial context
+     * @return an instance of the machine
+     * @throws Exception is thrown if anything goes wrong
+     */
+    Machine<S, E> newMachine(MachineDefinition<S, E> type, String id, Map<String, String> context) throws Exception;
+
+    /**
+     * Locates, restores and returns the state machine of the specified type and with the specified ID
+     * <p>
+     * The machine must automatically execute any STP transitions configured our of the initial state
+     *
+     * An exception must be thrown if the ID points to a machine that is not of the specified type
+     *
+     * @param def the machine definition
+     * @param id the id of the machine
+     * @return an instance of the machine
+     * @throws Exception if anything goes wrong
+     */
+    Machine<S, E> read(MachineDefinition<S, E> def, String id) throws Exception;
+
+    /**
+     * Finds all state machines that have not executed any transitions during in the specified timeout
+     *
+     * @param seconds - the timeout
+     *
+     * @return a list of machine descriptions
+     */
     List<MachineSnapshot> findStale(long seconds);
+
+    /**
+     * finds all state machines stuck in an error state
+     * @return a list of machine descriptions
+     */
     List<MachineSnapshot> findFailed();
+
+    /**
+     * finds all state machines in terminal states
+     * @return a list of machine descriptions
+     */
     List<MachineSnapshot> findTerminated();
 }

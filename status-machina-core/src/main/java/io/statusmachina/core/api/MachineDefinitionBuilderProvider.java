@@ -16,14 +16,14 @@
 package io.statusmachina.core.api;
 
 /**
- * an interface that provides an appropriate state machine builder
+ * an interface that provides an appropriate state machine definition builder
  *
  * @param <S> the type of state machine states
  * @param <E> the type of state machine events
  */
-public interface MachineBuilderProvider<S,E> {
+public interface MachineDefinitionBuilderProvider<S,E> {
     /**
      * @return a new state machine builder instance
      */
-    MachineBuilder<S,E> getMachineBuilder();
+    MachineDefinitionBuilder<S,E> getMachineDefinitionBuilder(Class<S> stateType, Class<E> eventType);
 }

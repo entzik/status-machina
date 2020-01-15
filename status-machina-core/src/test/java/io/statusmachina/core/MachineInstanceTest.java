@@ -62,18 +62,14 @@ public class MachineInstanceTest {
         }
     };
 
-    final MachineDefinition<States, Events> def = MachineDefImpl.<States, Events>newBuilder()
-            .setName("toto")
+    final MachineDefinition<States, Events> def = new EnumBasedMachineDefinitionBuilderProvider().getMachineDefinitionBuilder(MachinaDefinitionTest.States.class, MachinaDefinitionTest.Events.class)
+            .name("toto")
             .states(States.values())
             .initialState(States.S1)
             .terminalStates(States.S4, States.S5)
             .events(Events.values())
             .transitions(t1, t2, t3, t4)
             .errorHandler(statesEventsErrorData -> {})
-            .eventToString(Enum::name)
-            .stringToEvent(Events::valueOf)
-            .stateToString(Enum::name)
-            .stringToState(States::valueOf)
             .build();
 
     @BeforeEach

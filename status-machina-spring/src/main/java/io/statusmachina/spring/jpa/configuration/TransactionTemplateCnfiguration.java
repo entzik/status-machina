@@ -15,11 +15,11 @@
 
 package io.statusmachina.spring.jpa.configuration;
 
+import io.statusmachina.spring.jpa.autoconfig.StatusMachinaProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @Configuration
@@ -29,11 +29,14 @@ public class TransactionTemplateCnfiguration {
     @Autowired
     PlatformTransactionManager platformTransactionManager;
 
+    @Autowired
+    StatusMachinaProperties config;
+
     @Bean(STATUS_MACHINA_TRANSACTION_TEMPLATE)
     public TransactionTemplate buildTransactionTemplate() {
         final TransactionTemplate transactionTemplate = new TransactionTemplate(platformTransactionManager);
-        transactionTemplate.setIsolationLevel(TransactionDefinition.ISOLATION_SERIALIZABLE);
-        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        transactionTemplate.setIsolationLevel(config.getTransactionIsolation());
+        transactionTemplate.setPropagationBehavior(config.getTransactionPropagation());
         return transactionTemplate;
     }
 }

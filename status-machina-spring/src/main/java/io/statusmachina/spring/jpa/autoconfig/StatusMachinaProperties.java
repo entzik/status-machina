@@ -17,25 +17,26 @@
 package io.statusmachina.spring.jpa.autoconfig;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.transaction.TransactionDefinition;
 
 @ConfigurationProperties(prefix = "statusmachina.spring")
 public class StatusMachinaProperties {
-    private int acquireRetriesMax;
-    private int acquireRetriesDelayIncrement;
+    private int transactionIsolation = TransactionDefinition.ISOLATION_SERIALIZABLE;
+    private int transactionPropagation = TransactionDefinition.PROPAGATION_REQUIRES_NEW;
 
-    public int getAcquireRetriesMax() {
-        return acquireRetriesMax;
+    public int getTransactionIsolation() {
+        return transactionIsolation;
     }
 
-    public void setAcquireRetriesMax(int acquireRetriesMax) {
-        this.acquireRetriesMax = acquireRetriesMax;
+    public void setTransactionIsolation(int transactionIsolation) {
+        this.transactionIsolation = transactionIsolation;
     }
 
-    public int getAcquireRetriesDelayIncrement() {
-        return acquireRetriesDelayIncrement;
+    public int getTransactionPropagation() {
+        return transactionPropagation;
     }
 
-    public void setAcquireRetriesDelayIncrement(int acquireRetriesDelayIncrement) {
-        this.acquireRetriesDelayIncrement = acquireRetriesDelayIncrement;
+    public void setTransactionPropagation(int transactionPropagation) {
+        this.transactionPropagation = transactionPropagation;
     }
 }

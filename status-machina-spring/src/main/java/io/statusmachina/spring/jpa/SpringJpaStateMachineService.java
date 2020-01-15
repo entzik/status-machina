@@ -17,20 +17,18 @@
 package io.statusmachina.spring.jpa;
 
 import io.statusmachina.core.MachineInstanceImpl;
-import io.statusmachina.core.TransitionException;
 import io.statusmachina.core.api.*;
 import io.statusmachina.core.spi.MachinePersistenceCallback;
 import io.statusmachina.core.spi.StateMachineService;
 import io.statusmachina.spring.jpa.configuration.TransactionTemplateCnfiguration;
 import io.statusmachina.spring.jpa.model.ExternalState;
 import io.statusmachina.spring.jpa.repo.ExternalStateRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
-import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.annotation.PostConstruct;
@@ -43,6 +41,8 @@ import java.util.stream.Collectors;
 @Service
 public class SpringJpaStateMachineService<S, E> implements StateMachineService<S, E>{
     public static final String ERROR_STATE = "__ERROR_STATE__";
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SpringJpaStateMachineService.class);
 
     @Autowired
     ExternalStateRepository externalStateRepository;
@@ -64,26 +64,33 @@ public class SpringJpaStateMachineService<S, E> implements StateMachineService<S
 
     @PostConstruct
     public void postConstruct() {
-        machinePersistenceCallback = new MyMachinePersistenceCallback<>(context.getBean(SpringJpaStateMachineService.class), transactionTemplate);
+        LOGGER.debug("constructing fine grained persistence callback");
+        machinePersistenceCallback = new FineGrainedMachinePersistenceCallback<>(context.getBean(SpringJpaStateMachineService.class), transactionTemplate);
     }
 
     @Override
     public Machine<S, E> newMachine(MachineDefinition<S, E> def, Map<String, String> context) throws Exception {
-        return machineInstanceBuilderProvider.getMachineBuilder().ofType(def).withContext(context).withPersistence(machinePersistenceCallback).build();
+        LOGGER.debug("building a new state machine of type {}", def.getName());
+        final Machine machine = machineInstanceBuilderProvider.getMachineBuilder().ofType(def).withContext(context).withPersistence(machinePersistenceCallback).build();
+        LOGGER.debug("built a new state machine of type {}, with ID {}", def.getName(), machine.getId());
+        return machine;
     }
 
     @Override
     public Machine<S, E> newMachine(MachineDefinition<S, E> def, String id, Map<String, String> context) throws Exception {
-        return machineInstanceBuilderProvider.getMachineBuilder().ofType(def).withContext(context).withPersistence(machinePersistenceCallback).withId(id).build();
+        LOGGER.debug("building a new state machine of type {}, with predefined ID {}", def.getName(), id);
+        final Machine machine = machineInstanceBuilderProvider.getMachineBuilder().ofType(def).withContext(context).withPersistence(machinePersistenceCallback).withId(id).build();
+        LOGGER.debug("built a new state machine of type {}, with ID {}", def.getName(), machine.getId());
+        return machine;
     }
 
-    public void create(Machine<S, E> instance) {
+    public ExternalState create(Machine<S, E> instance) {
         final ExternalState entity = extractExternalState(instance);
-        externalStateRepository.save(entity);
+        return externalStateRepository.save(entity);
     }
 
     @Override
-    public Machine<S, E> read(MachineDefinition<S, E> def, String id) throws TransitionException {
+    public Machine<S, E> read(MachineDefinition<S, E> def, String id) throws Exception {
         final ExternalState externalState = externalStateRepository.findById(id).orElseThrow();
         final Map<String, String> context = externalState.getContext();
         final S currentstate = def.getStringToState().apply(externalState.getCurrentState());
@@ -173,11 +180,11 @@ public class SpringJpaStateMachineService<S, E> implements StateMachineService<S
             crtContext.remove(keyToRemove);
     }
 
-    private static class MyMachinePersistenceCallback<S, E> implements MachinePersistenceCallback<S, E> {
+    private static class FineGrainedMachinePersistenceCallback<S, E> implements MachinePersistenceCallback<S, E> {
         private SpringJpaStateMachineService stateMachineService;
         private TransactionTemplate transactionTemplate;
 
-        public MyMachinePersistenceCallback(SpringJpaStateMachineService stateMachineService, TransactionTemplate transactionTemplate) {
+        public FineGrainedMachinePersistenceCallback(SpringJpaStateMachineService stateMachineService, TransactionTemplate transactionTemplate) {
             this.stateMachineService = stateMachineService;
             this.transactionTemplate = transactionTemplate;
         }

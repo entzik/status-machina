@@ -16,9 +16,8 @@
 
 package io.statusmachina.core;
 
+import io.statusmachina.core.api.MachineDefinition;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExecutionCondition;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import static io.statusmachina.core.Transition.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,17 +30,13 @@ public class MachinaDefinitionTest {
     final Transition<States, Events> t3 = event(States.S3, States.S4, Events.E34);
     final Transition<States, Events> t4 = event(States.S3, States.S5, Events.E35);
 
-    final MachineDefImpl<States, Events> def = MachineDefImpl.<States, Events>newBuilder()
-            .setName("toto")
+    final MachineDefinition<States, Events> def = new EnumBasedMachineDefinitionBuilderProvider().getMachineDefinitionBuilder(States.class, Events.class)
+            .name("toto")
             .states(States.values())
             .initialState(States.S1)
             .terminalStates(States.S4, States.S5)
             .events(Events.values())
             .transitions(t1, t2, t3, t4)
-            .eventToString(Enum::name)
-            .stringToEvent(Events::valueOf)
-            .stateToString(Enum::name)
-            .stringToState(States::valueOf)
             .build();
 
     @Test
