@@ -16,9 +16,8 @@
 
 package io.statusmachina.spring.jpa.configuration;
 
-import io.statusmachina.core.EnumBasedMachineDefinitionBuilderProvider;
-import io.statusmachina.core.MachineInstanceBuilderImpl;
-import io.statusmachina.core.api.MachineBuilder;
+import io.statusmachina.core.stdimpl.EnumBasedMachineDefinitionBuilderProvider;
+import io.statusmachina.core.stdimpl.MachineInstanceBuilderImpl;
 import io.statusmachina.core.api.MachineBuilderProvider;
 import io.statusmachina.core.api.MachineDefinitionBuilderProvider;
 import org.springframework.context.annotation.Bean;

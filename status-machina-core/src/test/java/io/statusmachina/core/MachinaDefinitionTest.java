@@ -17,9 +17,11 @@
 package io.statusmachina.core;
 
 import io.statusmachina.core.api.MachineDefinition;
+import io.statusmachina.core.api.Transition;
+import io.statusmachina.core.stdimpl.EnumBasedMachineDefinitionBuilderProvider;
 import org.junit.jupiter.api.Test;
 
-import static io.statusmachina.core.Transition.*;
+import static io.statusmachina.core.api.Transition.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 

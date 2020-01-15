@@ -16,13 +16,11 @@
 
 package io.statusmachina.core.api;
 
-import io.statusmachina.core.TransitionException;
-import io.statusmachina.core.TransitionRecord;
+import io.statusmachina.core.stdimpl.TransitionRecord;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Consumer;
 
 /**
  * defines a state machine

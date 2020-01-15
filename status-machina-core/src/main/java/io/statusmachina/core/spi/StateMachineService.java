@@ -16,13 +16,12 @@
 
 package io.statusmachina.core.spi;
 
-import io.statusmachina.core.TransitionException;
-import io.statusmachina.core.api.MachineDefinition;
 import io.statusmachina.core.api.Machine;
+import io.statusmachina.core.api.MachineDefinition;
 import io.statusmachina.core.api.MachineSnapshot;
 
-import java.util.Map;
 import java.util.List;
+import java.util.Map;
 
 /**
  * An interface that provides state machine lifecycle services. it allows to create and find state machines.

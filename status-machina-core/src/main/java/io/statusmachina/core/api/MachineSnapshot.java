@@ -28,6 +28,15 @@ public class MachineSnapshot {
     final Map<String,String> context;
     final String error;
 
+    /**
+     * construct an internal representation of the state machine
+     *
+     * @param type the name of the {@link MachineDefinition}
+     * @param id the id of the {@link Machine}
+     * @param crtState the current state
+     * @param context the context
+     * @param error error description, if applicable
+     */
     public MachineSnapshot(String type, String id, String crtState, Map<String, String> context, String error) {
         this.type = type;
         this.id = id;
@@ -36,18 +45,30 @@ public class MachineSnapshot {
         this.error = error;
     }
 
+    /**
+     * the name of the {@link MachineDefinition}
+     */
     public String getType() {
         return type;
     }
 
+    /**
+     * the id of the {@link Machine}
+     */
     public String getId() {
         return id;
     }
 
+    /**
+     * the context of the state machine
+     */
     public Map<String, String> getContext() {
         return context;
     }
 
+    /**
+     * the error message
+     */
     public String getError() {
         return error;
     }

@@ -19,8 +19,11 @@ package io.statusmachina.core;
 import com.google.common.collect.ImmutableMap;
 import io.statusmachina.core.api.Machine;
 import io.statusmachina.core.api.MachineDefinition;
+import io.statusmachina.core.api.Transition;
 import io.statusmachina.core.api.TransitionAction;
 import io.statusmachina.core.spi.MachinePersistenceCallback;
+import io.statusmachina.core.stdimpl.EnumBasedMachineDefinitionBuilderProvider;
+import io.statusmachina.core.stdimpl.MachineInstanceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -28,8 +31,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-import static io.statusmachina.core.Transition.event;
-import static io.statusmachina.core.Transition.stp;
+import static io.statusmachina.core.api.Transition.event;
+import static io.statusmachina.core.api.Transition.stp;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 

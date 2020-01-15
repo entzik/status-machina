@@ -16,7 +16,7 @@
 
 package io.statusmachina.spring.jpa;
 
-import io.statusmachina.core.MachineInstanceImpl;
+import io.statusmachina.core.stdimpl.MachineInstanceImpl;
 import io.statusmachina.core.api.*;
 import io.statusmachina.core.spi.MachinePersistenceCallback;
 import io.statusmachina.core.spi.StateMachineService;

@@ -15,8 +15,6 @@
 
 package io.statusmachina.core.api;
 
-import io.statusmachina.core.Transition;
-
 import java.util.function.Consumer;
 import java.util.function.Function;
 

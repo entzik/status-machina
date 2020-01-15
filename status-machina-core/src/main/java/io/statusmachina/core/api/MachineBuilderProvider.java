@@ -16,7 +16,7 @@
 package io.statusmachina.core.api;
 
 /**
- * an interface that provides an appropriate state machine builder
+ * a factory interface that provides an appropriate state machine builder
  *
  * @param <S> the type of state machine states
  * @param <E> the type of state machine events

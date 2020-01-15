@@ -16,63 +16,53 @@
 
 package io.statusmachina.core.api;
 
-import com.google.common.collect.ImmutableList;
-import io.statusmachina.core.MachineInstanceImpl;
-import io.statusmachina.core.TransitionException;
 import io.statusmachina.core.spi.MachinePersistenceCallback;
 
 import java.util.Map;
-import java.util.function.Consumer;
 
 /**
  * a contract that defines a state machine builder
+ * @param <S> the type of the states
  */
-public interface MachineBuilder<S,E> {
+public interface MachineBuilder<S, E> {
     /**
      * specify a state machine definition. it is mandatory in order to be able to build a state machine.
+     *
      * @param definition the state machine definition
-     * @param <S> the type of machine state
-     * @param <E> the type of events accepted by the machine
      * @return the updated machine builder
      */
-    MachineBuilder<S,E> ofType(MachineDefinition<S,E> definition);
+    MachineBuilder<S, E> ofType(MachineDefinition<S, E> definition);
 
     /**
      * specify the initial context of the state machine you are building
+     *
      * @param context context entries
-     * @param <S> the type of machine state
-     * @param <E> the type of events accepted by the machine
      * @return the updated machine builder
      */
-    MachineBuilder<S,E> withContext(Map<String, String> context);
+    MachineBuilder<S, E> withContext(Map<String, String> context);
 
     /**
      * specify an machine ID beforehand. calling this method is optional, it not called a UUID will be generated on the fly
-     * @param id the ID to be used for the machine
-     * @param <S> the type of machine state
-     * @param <E> the type of events accepted by the machine
+     *
+     * @param id  the ID to be used for the machine
      * @return the updated machine builder
      */
-    MachineBuilder<S,E> withId(String id);
+    MachineBuilder<S, E> withId(String id);
 
     /**
      * configure a set of callbacks to be invoked after each transition - typically to implement persistence or audit trails
-     * @param callbacks callbacks to be configured
-     * @param <S> the type of machine state
-     * @param <E> the type of events accepted by the machine
+     *
+     * @param machinePersistenceCallback callbacks to be configured
      * @return the updated machine builder
      */
-    MachineBuilder<S,E> withPersistence(MachinePersistenceCallback<S,E> machinePersistenceCallback);
+    MachineBuilder<S, E> withPersistence(MachinePersistenceCallback<S, E> machinePersistenceCallback);
 
     /**
      * build a state machine machine off the specified type and context, and put it in the defined initial state.
      * IF STP transitions are definied out of the initial state, they will be executed.
      *
-     * @param <S> the type of machine state
-     * @param <E> the type of events accepted by the machine
      * @return a state machine instance
      * @throws TransitionException if transiton imtegrity rules have failed
      */
-    Machine<S,E> build() throws Exception;
-
+    Machine<S, E> build() throws Exception;
 }

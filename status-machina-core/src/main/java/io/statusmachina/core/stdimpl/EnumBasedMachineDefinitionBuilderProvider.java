@@ -13,7 +13,7 @@
  *
  */
 
-package io.statusmachina.core;
+package io.statusmachina.core.stdimpl;
 
 import io.statusmachina.core.api.MachineDefinitionBuilder;
 import io.statusmachina.core.api.MachineDefinitionBuilderProvider;
