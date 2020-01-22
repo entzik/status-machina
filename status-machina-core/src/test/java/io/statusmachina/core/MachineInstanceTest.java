@@ -39,13 +39,15 @@ import static org.assertj.core.api.Assertions.fail;
 
 public class MachineInstanceTest {
     final SpyAction a1 = new SpyAction();
+    final SpyAction a1Post = new SpyAction();
     final SpyAction a2 = new SpyAction();
     final SpyAction a3 = new SpyAction();
+    final SpyAction a3Post = new SpyAction();
     final SpyAction a4 = new SpyAction();
 
-    final Transition<States, Events> t1 = stp(States.S1, States.S2, a1);
+    final Transition<States, Events> t1 = stp(States.S1, States.S2, a1, a1Post);
     final Transition<States, Events> t2 = event(States.S2, States.S3, Events.E23, a2);
-    final Transition<States, Events> t3 = event(States.S3, States.S4, Events.E34, a3);
+    final Transition<States, Events> t3 = event(States.S3, States.S4, Events.E34, a3, a3Post);
     final Transition<States, Events> t4 = event(States.S3, States.S5, Events.E35, a4);
 
     final MachinePersistenceCallback<States, Events> machinePersistenceCallback = new MachinePersistenceCallback<>() {
@@ -78,8 +80,10 @@ public class MachineInstanceTest {
     @BeforeEach
     void before() {
         a1.reset();
+        a1Post.reset();
         a2.reset();
         a3.reset();
+        a3Post.reset();
         a4.reset();
     }
 
@@ -90,6 +94,7 @@ public class MachineInstanceTest {
             assertThat(instance.getId()).isNotEmpty();
             assertThat(instance.getCurrentState()).isEqualTo(States.S2).as("after creation machine has moved from state S1 to state S2 using STP transition t1");
             assertThat(a1.hasBeenThere()).isTrue();
+            assertThat(a1Post.hasBeenThere()).isTrue();
         } catch (Exception e) {
             fail("machine was not instantiated", e);
         }
@@ -116,8 +121,10 @@ public class MachineInstanceTest {
             final Machine<States, Events> updated2 = updated1.sendEvent(Events.E34);
             assertThat(updated2.getCurrentState()).isEqualTo(States.S4).as("after creation machine has moved from state S3 to state S4 using event transition t3");
             assertThat(a1.hasBeenThere()).isTrue();
+            assertThat(a1Post.hasBeenThere()).isTrue();
             assertThat(a2.hasBeenThere()).isTrue();
             assertThat(a3.hasBeenThere()).isTrue();
+            assertThat(a3Post.hasBeenThere()).isTrue();
             assertThat(a4.hasBeenThere()).isFalse();
         } catch (Exception e) {
             fail("machine was not instantiated", e);
@@ -132,8 +139,10 @@ public class MachineInstanceTest {
             final Machine<States, Events> updated2 = updated1.sendEvent(Events.E35);
             assertThat(updated2.getCurrentState()).isEqualTo(States.S5).as("after creation machine has moved from state S3 to state S5 using event transition t4");
             assertThat(a1.hasBeenThere()).isTrue();
+            assertThat(a1Post.hasBeenThere()).isTrue();
             assertThat(a2.hasBeenThere()).isTrue();
             assertThat(a3.hasBeenThere()).isFalse();
+            assertThat(a3Post.hasBeenThere()).isFalse();
             assertThat(a4.hasBeenThere()).isTrue();
         } catch (Exception e) {
             fail("machine was not instantiated", e);

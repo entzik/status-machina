@@ -98,8 +98,8 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
     }
 
     @Override
-    public Map<String, String> getContext() {
-        return new HashMap<>(context);
+    public ImmutableMap<String, String> getContext() {
+        return ImmutableMap.<String, String>builder().putAll(context).build();
     }
 
     @Override
@@ -128,7 +128,6 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
         else
             throw new IllegalStateException("machine is already started");
     }
-
 
     @Override
     public Machine<S,E>  sendEvent(E event) throws TransitionException {
@@ -191,12 +190,13 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
                     return persistenceCallback.update(newMachine);
                 }
             });
+            if (!machine.isErrorState())
+                transition.getPostAction().ifPresent(transitionAction -> ((TransitionAction<P>) transitionAction).apply(machine.getContext(), param));
             return ((MachineInstanceImpl) machine).tryStp();
         } catch (Exception e) {
             throw new TransitionException(this, transition, e);
         }
     }
-
 
     @Override
     public boolean isTerminalState() {

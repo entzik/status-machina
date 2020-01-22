@@ -1,5 +1,5 @@
-# status-machina
-A small, simple and pragmatic state machine engine targeted at resilient microservices orchestration.
+# Status Machina
+A small, simple and pragmatic state machine engine targeted at resilient micro-services orchestration.
 
 It offers a core library and a spring integration library.
 

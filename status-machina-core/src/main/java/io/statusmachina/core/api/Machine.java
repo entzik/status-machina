@@ -16,6 +16,7 @@
 
 package io.statusmachina.core.api;
 
+import com.google.common.collect.ImmutableMap;
 import io.statusmachina.core.stdimpl.TransitionRecord;
 
 import java.util.List;
@@ -42,7 +43,7 @@ public interface Machine<S, E> {
     /**
      * @return the machine's context
      */
-    Map<String, String> getContext();
+    ImmutableMap<String, String> getContext();
 
     /**
      * @return the history of transitions executed on this state machine since it was created, to present

@@ -36,6 +36,28 @@ public class Transition<S, E> {
     private final S to;
     private final Optional<E> event;
     private Optional<TransitionAction<?>> action;
+    private Optional<TransitionAction<?>> postAction;
+
+    /**
+     * Configure a transition so that if the machine is in a specified current state ("from") and receives the specified
+     * event ("event"), it will move to the specified target state ("to") and execute the specified action in the process.
+     * <p>
+     * The post action is executed after the transition has completed. if a specific service provider executes the
+     * transition in a transaction, then the post action must be executed after the the transaction has completed and
+     * only if it has completed successfully.
+     *
+     * @param from       the current state
+     * @param to         the target state
+     * @param event      the event that triggers the transition
+     * @param action     the action to be executed during the transition
+     * @param postAction the action to be executed after the transition has completed
+     * @param <S>        the state type
+     * @param <E>        the event type
+     * @return a {@link Transition} instance
+     */
+    public static <S, E> Transition<S, E> event(S from, S to, E event, TransitionAction<?> action, TransitionAction<?> postAction) {
+        return new Transition<>(from, to, event, action, postAction);
+    }
 
     /**
      * Configure a transition so that if the machine is in a specified current state ("from") and receives the specified
@@ -71,12 +93,31 @@ public class Transition<S, E> {
     /**
      * Configure a transition so that if the machine is in a specified current state ("from") it will automatically
      * move to the specified target state ("to") and execute the specified action in the process.
+     * <p>
+     * The post action is executed after the transition has completed. If a specific service provider executes the
+     * transition in a transaction, then the post action must be executed after the the transaction has completed and
+     * only if it has completed successfully.
      *
-     * @param from the current state
-     * @param to   the target state
+     * @param from   the current state
+     * @param to     the target state
      * @param action the action to be executed
-     * @param <S>  the state type
-     * @param <E>  the event type
+     * @param <S>    the state type
+     * @param <E>    the event type
+     * @return a {@link Transition} instance
+     */
+    public static <S, E> Transition<S, E> stp(S from, S to, TransitionAction<?> action, TransitionAction<?> postAction) {
+        return new Transition<>(from, to, action, postAction);
+    }
+
+    /**
+     * Configure a transition so that if the machine is in a specified current state ("from") it will automatically
+     * move to the specified target state ("to") and execute the specified action in the process.
+     *
+     * @param from   the current state
+     * @param to     the target state
+     * @param action the action to be executed
+     * @param <S>    the state type
+     * @param <E>    the event type
      * @return a {@link Transition} instance
      */
     public static <S, E> Transition<S, E> stp(S from, S to, TransitionAction<?> action) {
@@ -97,11 +138,20 @@ public class Transition<S, E> {
         return new Transition<>(from, to);
     }
 
+    private Transition(S from, S to, E event, TransitionAction<?> action, TransitionAction<?> postAction) {
+        this.from = from;
+        this.to = to;
+        this.event = Optional.of(event);
+        this.action = Optional.of(action);
+        this.postAction = Optional.of(postAction);
+    }
+
     private Transition(S from, S to, E event, TransitionAction<?> action) {
         this.from = from;
         this.to = to;
         this.event = Optional.of(event);
         this.action = Optional.of(action);
+        this.postAction = Optional.empty();
     }
 
     private Transition(S from, S to, E event) {
@@ -109,6 +159,15 @@ public class Transition<S, E> {
         this.to = to;
         this.event = Optional.of(event);
         this.action = Optional.empty();
+        this.postAction = Optional.empty();
+    }
+
+    private Transition(S from, S to, TransitionAction<?> action, TransitionAction<?> postAction) {
+        this.from = from;
+        this.to = to;
+        this.event = Optional.empty();
+        this.action = Optional.of(action);
+        this.postAction = Optional.of(postAction);
     }
 
     private Transition(S from, S to, TransitionAction<?> action) {
@@ -116,6 +175,7 @@ public class Transition<S, E> {
         this.to = to;
         this.event = Optional.empty();
         this.action = Optional.of(action);
+        this.postAction = Optional.empty();
     }
 
     private Transition(S from, S to) {
@@ -123,6 +183,7 @@ public class Transition<S, E> {
         this.to = to;
         this.event = Optional.empty();
         this.action = Optional.empty();
+        this.postAction = Optional.empty();
     }
 
     /**
@@ -137,6 +198,7 @@ public class Transition<S, E> {
 
     /**
      * return the state in which this transition will end up should this transition activate and cbe carried over successfully
+     *
      * @return the target state
      */
     public S getTo() {
@@ -165,5 +227,13 @@ public class Transition<S, E> {
      */
     public Optional<TransitionAction<?>> getAction() {
         return action;
+    }
+
+    /**
+     * @return an action to be executed after a the transition has completed and all state and context changes have been
+     * commited to underlying storage, along with change of any transactional service the action may have invoked.
+     */
+    public Optional<TransitionAction<?>> getPostAction() {
+        return postAction;
     }
 }
