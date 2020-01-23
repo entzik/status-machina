@@ -17,10 +17,7 @@
 package io.statusmachina.core;
 
 import com.google.common.collect.ImmutableMap;
-import io.statusmachina.core.api.Machine;
-import io.statusmachina.core.api.MachineDefinition;
-import io.statusmachina.core.api.Transition;
-import io.statusmachina.core.api.TransitionAction;
+import io.statusmachina.core.api.*;
 import io.statusmachina.core.spi.MachinePersistenceCallback;
 import io.statusmachina.core.stdimpl.EnumBasedMachineDefinitionBuilderProvider;
 import io.statusmachina.core.stdimpl.MachineInstanceImpl;
@@ -39,10 +36,10 @@ import static org.assertj.core.api.Assertions.fail;
 
 public class MachineInstanceTest {
     final SpyAction a1 = new SpyAction();
-    final SpyAction a1Post = new SpyAction();
+    final SpyPostAction a1Post = new SpyPostAction();
     final SpyAction a2 = new SpyAction();
     final SpyAction a3 = new SpyAction();
-    final SpyAction a3Post = new SpyAction();
+    final SpyPostAction a3Post = new SpyPostAction();
     final SpyAction a4 = new SpyAction();
 
     final Transition<States, Events> t1 = stp(States.S1, States.S2, a1, a1Post);
@@ -181,6 +178,32 @@ public class MachineInstanceTest {
             this.p = p;
             this.beenThere = true;
             return this.context;
+        }
+    }
+
+    static class SpyPostAction<P> implements TransitionPostAction<P> {
+        private boolean beenThere = false;
+        private ImmutableMap<String, String> context;
+        private P p;
+
+
+        public boolean hasBeenThere() {
+            return beenThere;
+        }
+
+        public Map<String, String> getContext() {
+            return context;
+        }
+
+        public void reset() {
+            beenThere = false;
+        }
+
+        @Override
+        public void accept(ImmutableMap<String, String> stringStringImmutableMap, P p) {
+            this.context = context;
+            this.p = p;
+            this.beenThere = true;
         }
     }
 }

@@ -36,7 +36,7 @@ public class Transition<S, E> {
     private final S to;
     private final Optional<E> event;
     private Optional<TransitionAction<?>> action;
-    private Optional<TransitionAction<?>> postAction;
+    private Optional<TransitionPostAction<?>> postAction;
 
     /**
      * Configure a transition so that if the machine is in a specified current state ("from") and receives the specified
@@ -45,6 +45,8 @@ public class Transition<S, E> {
      * The post action is executed after the transition has completed. if a specific service provider executes the
      * transition in a transaction, then the post action must be executed after the the transaction has completed and
      * only if it has completed successfully.
+     * <p>
+     * Unlike the a transition action, the post transition action is not allowed to mutate the state machine's context.
      *
      * @param from       the current state
      * @param to         the target state
@@ -55,8 +57,8 @@ public class Transition<S, E> {
      * @param <E>        the event type
      * @return a {@link Transition} instance
      */
-    public static <S, E> Transition<S, E> event(S from, S to, E event, TransitionAction<?> action, TransitionAction<?> postAction) {
-        return new Transition<>(from, to, event, action, postAction);
+    public static <S, E> Transition<S, E> event(S from, S to, E event, TransitionAction<?> action, TransitionPostAction<?> postAction) {
+        return new Transition<S,E>(from, to, event, action, postAction);
     }
 
     /**
@@ -97,6 +99,8 @@ public class Transition<S, E> {
      * The post action is executed after the transition has completed. If a specific service provider executes the
      * transition in a transaction, then the post action must be executed after the the transaction has completed and
      * only if it has completed successfully.
+     * <p>
+     * Unlike the a transition action, the post transition action is not allowed to mutate the state machine's context
      *
      * @param from   the current state
      * @param to     the target state
@@ -105,7 +109,7 @@ public class Transition<S, E> {
      * @param <E>    the event type
      * @return a {@link Transition} instance
      */
-    public static <S, E> Transition<S, E> stp(S from, S to, TransitionAction<?> action, TransitionAction<?> postAction) {
+    public static <S, E> Transition<S, E> stp(S from, S to, TransitionAction<?> action, TransitionPostAction<?> postAction) {
         return new Transition<>(from, to, action, postAction);
     }
 
@@ -138,7 +142,7 @@ public class Transition<S, E> {
         return new Transition<>(from, to);
     }
 
-    private Transition(S from, S to, E event, TransitionAction<?> action, TransitionAction<?> postAction) {
+    private Transition(S from, S to, E event, TransitionAction<?> action, TransitionPostAction<?> postAction) {
         this.from = from;
         this.to = to;
         this.event = Optional.of(event);
@@ -162,7 +166,7 @@ public class Transition<S, E> {
         this.postAction = Optional.empty();
     }
 
-    private Transition(S from, S to, TransitionAction<?> action, TransitionAction<?> postAction) {
+    private Transition(S from, S to, TransitionAction<?> action, TransitionPostAction<?> postAction) {
         this.from = from;
         this.to = to;
         this.event = Optional.empty();
@@ -233,7 +237,7 @@ public class Transition<S, E> {
      * @return an action to be executed after a the transition has completed and all state and context changes have been
      * commited to underlying storage, along with change of any transactional service the action may have invoked.
      */
-    public Optional<TransitionAction<?>> getPostAction() {
+    public Optional<TransitionPostAction<?>> getPostAction() {
         return postAction;
     }
 }

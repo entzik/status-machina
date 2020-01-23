@@ -191,7 +191,7 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
                 }
             });
             if (!machine.isErrorState())
-                transition.getPostAction().ifPresent(transitionAction -> ((TransitionAction<P>) transitionAction).apply(machine.getContext(), param));
+                transition.getPostAction().ifPresent(transitionAction -> ((TransitionPostAction<P>) transitionAction).accept(machine.getContext(), param));
             return ((MachineInstanceImpl) machine).tryStp();
         } catch (Exception e) {
             throw new TransitionException(this, transition, e);
