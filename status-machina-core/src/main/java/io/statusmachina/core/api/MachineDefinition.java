@@ -16,6 +16,8 @@
 
 package io.statusmachina.core.api;
 
+import com.google.common.collect.ImmutableMap;
+
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -77,7 +79,7 @@ public interface MachineDefinition<S, E> {
      * @param state the state out of which we ae looking for an STP transition
      * @return an STP transition, if any
      */
-    Optional<Transition<S, E>> findStpTransition(S state);
+    Optional<Transition<S, E>> findStpTransition(S state, ImmutableMap<String, String> context);
 
     /**
      * @param state the state out of which we ae looking for a transition that matches the event

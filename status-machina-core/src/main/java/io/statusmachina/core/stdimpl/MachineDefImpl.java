@@ -16,6 +16,7 @@
 package io.statusmachina.core.stdimpl;
 
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import io.statusmachina.core.api.ErrorData;
 import io.statusmachina.core.api.MachineDefinition;
@@ -163,8 +164,11 @@ public class MachineDefImpl<S, E> implements MachineDefinition<S, E> {
      * @return the stp transition
      */
     @Override
-    public Optional<Transition<S, E>> findStpTransition(S state) {
-        return transitions.stream().filter(t -> t.getFrom().equals(state) && t.isSTP()).findFirst();
+    public Optional<Transition<S, E>> findStpTransition(S state, ImmutableMap<String,String> context) {
+        return transitions.stream()
+                .filter(t -> t.getFrom().equals(state) && t.isSTP())
+                .filter(t -> t.getGuard().map(guard -> guard.apply(context)).orElse(true))
+                .findFirst();
     }
 
     /**

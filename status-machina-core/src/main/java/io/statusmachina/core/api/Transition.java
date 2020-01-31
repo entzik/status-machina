@@ -35,8 +35,9 @@ public class Transition<S, E> {
     private final S from;
     private final S to;
     private final Optional<E> event;
-    private Optional<TransitionAction<?>> action;
-    private Optional<TransitionPostAction<?>> postAction;
+    private final Optional<TransitionGuard> guard;
+    private final Optional<TransitionAction<?>> action;
+    private final Optional<TransitionPostAction<?>> postAction;
 
     /**
      * Configure a transition so that if the machine is in a specified current state ("from") and receives the specified
@@ -109,8 +110,44 @@ public class Transition<S, E> {
      * @param <E>    the event type
      * @return a {@link Transition} instance
      */
+    public static <S, E> Transition<S, E> stp(S from, S to, TransitionAction<?> action, TransitionPostAction<?> postAction, TransitionGuard transitionGuard) {
+        return new Transition<>(from, to, action, postAction, transitionGuard);
+    }
+
+    /**
+     * Configure a transition so that if the machine is in a specified current state ("from") it will automatically
+     * move to the specified target state ("to") and execute the specified action in the process.
+     * <p>
+     * The post action is executed after the transition has completed. If a specific service provider executes the
+     * transition in a transaction, then the post action must be executed after the the transaction has completed and
+     * only if it has completed successfully.
+     * <p>
+     * Unlike the a transition action, the post transition action is not allowed to mutate the state machine's context
+     *
+     * @param from   the current state
+     * @param to     the target state
+     * @param action the action to be executed
+     * @param <S>    the state type
+     * @param <E>    the event type
+     * @return a {@link Transition} instance
+     */
     public static <S, E> Transition<S, E> stp(S from, S to, TransitionAction<?> action, TransitionPostAction<?> postAction) {
         return new Transition<>(from, to, action, postAction);
+    }
+
+    /**
+     * Configure a transition so that if the machine is in a specified current state ("from") it will automatically
+     * move to the specified target state ("to") and execute the specified action in the process.
+     *
+     * @param from   the current state
+     * @param to     the target state
+     * @param action the action to be executed
+     * @param <S>    the state type
+     * @param <E>    the event type
+     * @return a {@link Transition} instance
+     */
+    public static <S, E> Transition<S, E> stp(S from, S to, TransitionAction<?> action, TransitionGuard transitionGuard) {
+        return new Transition<>(from, to, action, transitionGuard);
     }
 
     /**
@@ -138,6 +175,20 @@ public class Transition<S, E> {
      * @param <E>  the event type
      * @return a {@link Transition} instance
      */
+    public static <S, E> Transition<S, E> stp(S from, S to, TransitionGuard transitionGuard) {
+        return new Transition<>(from, to, transitionGuard);
+    }
+
+    /**
+     * Configure a transition so that if the machine is in a specified current state ("from") it will automatically
+     * move to the specified target state ("to").
+     *
+     * @param from the current state
+     * @param to   the target state
+     * @param <S>  the state type
+     * @param <E>  the event type
+     * @return a {@link Transition} instance
+     */
     public static <S, E> Transition<S, E> stp(S from, S to) {
         return new Transition<>(from, to);
     }
@@ -148,6 +199,7 @@ public class Transition<S, E> {
         this.event = Optional.of(event);
         this.action = Optional.of(action);
         this.postAction = Optional.of(postAction);
+        this.guard = Optional.empty();
     }
 
     private Transition(S from, S to, E event, TransitionAction<?> action) {
@@ -156,6 +208,7 @@ public class Transition<S, E> {
         this.event = Optional.of(event);
         this.action = Optional.of(action);
         this.postAction = Optional.empty();
+        this.guard = Optional.empty();
     }
 
     private Transition(S from, S to, E event) {
@@ -164,6 +217,7 @@ public class Transition<S, E> {
         this.event = Optional.of(event);
         this.action = Optional.empty();
         this.postAction = Optional.empty();
+        this.guard = Optional.empty();
     }
 
     private Transition(S from, S to, TransitionAction<?> action, TransitionPostAction<?> postAction) {
@@ -172,6 +226,16 @@ public class Transition<S, E> {
         this.event = Optional.empty();
         this.action = Optional.of(action);
         this.postAction = Optional.of(postAction);
+        this.guard = Optional.empty();
+    }
+
+    private Transition(S from, S to, TransitionAction<?> action, TransitionPostAction<?> postAction, TransitionGuard transitionGuard) {
+        this.from = from;
+        this.to = to;
+        this.event = Optional.empty();
+        this.action = Optional.of(action);
+        this.postAction = Optional.of(postAction);
+        this.guard = Optional.of(transitionGuard);
     }
 
     private Transition(S from, S to, TransitionAction<?> action) {
@@ -180,6 +244,16 @@ public class Transition<S, E> {
         this.event = Optional.empty();
         this.action = Optional.of(action);
         this.postAction = Optional.empty();
+        this.guard = Optional.empty();
+    }
+
+    private Transition(S from, S to, TransitionAction<?> action, TransitionGuard transitionGuard) {
+        this.from = from;
+        this.to = to;
+        this.event = Optional.empty();
+        this.action = Optional.of(action);
+        this.postAction = Optional.empty();
+        this.guard = Optional.of(transitionGuard);
     }
 
     private Transition(S from, S to) {
@@ -188,6 +262,16 @@ public class Transition<S, E> {
         this.event = Optional.empty();
         this.action = Optional.empty();
         this.postAction = Optional.empty();
+        this.guard = Optional.empty();
+    }
+
+    private Transition(S from, S to, TransitionGuard transitionGuard) {
+        this.from = from;
+        this.to = to;
+        this.event = Optional.empty();
+        this.action = Optional.empty();
+        this.postAction = Optional.empty();
+        this.guard = Optional.of(transitionGuard);
     }
 
     /**
@@ -239,5 +323,9 @@ public class Transition<S, E> {
      */
     public Optional<TransitionPostAction<?>> getPostAction() {
         return postAction;
+    }
+
+    public Optional<TransitionGuard> getGuard() {
+        return guard;
     }
 }

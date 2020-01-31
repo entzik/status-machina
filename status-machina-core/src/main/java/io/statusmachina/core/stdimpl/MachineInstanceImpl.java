@@ -141,18 +141,6 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
         return applyTransition(transition, param);
     }
 
-/*
-    @Override
-    public Machine<S, E> sendEvent(E event) throws TransitionException {
-        return sendEvent(event);
-    }
-
-    @Override
-    public <P> Machine<S, E> sendEvent(E event, P param) throws TransitionException {
-        return sendEvent(event, param);
-    }
-*/
-
     @Override
     public Machine<S, E> recoverFromError(S state, Map<String, String> context) {
         Optional<String> newError = Optional.empty();
@@ -165,11 +153,7 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
         if (this.isErrorState())
             return this;
         else {
-            final Optional<Transition<S, E>> stpTransition = def.findStpTransition(currentState);
-            if (stpTransition.isPresent()) {
-                return applyTransition(stpTransition.get(), null);
-            } else
-                return this;
+            return def.findStpTransition(currentState, context).map( t -> applyTransition(t, null)).orElse(this);
         }
     }
 
