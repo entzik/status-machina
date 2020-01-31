@@ -19,5 +19,16 @@ import com.google.common.collect.ImmutableMap;
 
 import java.util.function.Function;
 
+/**
+ * A transition guard determines if the transition it is attached to can be activated or not. The decision must be taken
+ * upon examining the machine's context
+ */
 public interface TransitionGuard extends Function<ImmutableMap<String, String>, Boolean> {
+    /**
+     * decide whether the transition can be executed
+     * @param immutableMap the state machine's context
+     * @return true of the machine can be activated
+     */
+    @Override
+    Boolean apply(ImmutableMap<String, String> immutableMap);
 }

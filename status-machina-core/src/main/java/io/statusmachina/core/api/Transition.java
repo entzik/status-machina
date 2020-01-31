@@ -106,6 +106,7 @@ public class Transition<S, E> {
      * @param from   the current state
      * @param to     the target state
      * @param action the action to be executed
+     * @param transitionGuard the guard that will decide if the transition can be executed or not
      * @param <S>    the state type
      * @param <E>    the event type
      * @return a {@link Transition} instance
@@ -142,6 +143,7 @@ public class Transition<S, E> {
      * @param from   the current state
      * @param to     the target state
      * @param action the action to be executed
+     * @param transitionGuard the guard that will decide if the transition can be executed or not
      * @param <S>    the state type
      * @param <E>    the event type
      * @return a {@link Transition} instance
@@ -171,6 +173,7 @@ public class Transition<S, E> {
      *
      * @param from the current state
      * @param to   the target state
+     * @param transitionGuard the guard that will decide if the transition can be executed or not
      * @param <S>  the state type
      * @param <E>  the event type
      * @return a {@link Transition} instance
