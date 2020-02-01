@@ -35,7 +35,13 @@ import static org.assertj.core.api.Assertions.fail;
 
 
 public class MachineInstanceTest {
-    final SpyAction a1 = new SpyAction();
+    final SpyAction a1 = new SpyAction() {
+        @Override
+        public ImmutableMap<String, String> apply(ImmutableMap context, Object o) {
+            stash("toto", "titi");
+            return super.apply(context, o);
+        }
+    };
     final SpyPostAction a1Post = new SpyPostAction();
     final SpyAction a2 = new SpyAction();
     final SpyAction a3 = new SpyAction();
@@ -92,6 +98,7 @@ public class MachineInstanceTest {
             assertThat(instance.getCurrentState()).isEqualTo(States.S2).as("after creation machine has moved from state S1 to state S2 using STP transition t1");
             assertThat(a1.hasBeenThere()).isTrue();
             assertThat(a1Post.hasBeenThere()).isTrue();
+            assertThat(a1Post.getStashed()).isEqualTo("titi");
         } catch (Exception e) {
             fail("machine was not instantiated", e);
         }
@@ -185,6 +192,7 @@ public class MachineInstanceTest {
         private boolean beenThere = false;
         private ImmutableMap<String, String> context;
         private P p;
+        private String stashed;
 
 
         public boolean hasBeenThere() {
@@ -197,10 +205,16 @@ public class MachineInstanceTest {
 
         public void reset() {
             beenThere = false;
+            stashed = null;
+        }
+
+        public String getStashed() {
+            return stashed;
         }
 
         @Override
         public void accept(ImmutableMap<String, String> stringStringImmutableMap, P p) {
+            stashed = getStash("toto", String.class);
             this.context = context;
             this.p = p;
             this.beenThere = true;

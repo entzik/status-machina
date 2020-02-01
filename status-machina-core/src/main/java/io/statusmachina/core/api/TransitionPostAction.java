@@ -17,6 +17,7 @@ package io.statusmachina.core.api;
 
 import com.google.common.collect.ImmutableMap;
 
+import java.util.HashMap;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -31,4 +32,24 @@ import java.util.function.Consumer;
  * @param <P> the type of the event parameter
  */
 public interface TransitionPostAction<P> extends BiConsumer<ImmutableMap<String,String>, P> {
+    HashMap<String, Object> stashStore = new HashMap<>();
+
+    /**
+     * set the stash product by the action configured on the same transition
+     * @param stashStore the stash store
+     */
+    default void setStash(ImmutableMap<String, Object> stashStore) {
+        this.stashStore.putAll(stashStore);
+    }
+
+    /**
+     * return a stashed object
+     * @param key the object's key in the stash
+     * @param type the type of the stashed object
+     * @param <T> the  type of the stashed object
+     * @return the stashed object
+     */
+    default <T> T getStash(String key, Class<T> type) {
+        return this.stashStore.containsKey(key) ? type.cast(this.stashStore.get(key)) : null;
+    }
 }

@@ -159,23 +159,31 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
 
     private <P> Machine<S, E> applyTransition(Transition<S, E> transition, P param) throws TransitionException {
         try {
-            final Machine<S, E> machine = persistenceCallback.runInTransaction(() -> {
+            final MachineAndStash<S,E> machineAndStash = persistenceCallback.runInTransaction(() -> {
                 final Optional<TransitionAction<?>> action = transition.getAction();
                 try {
                     ImmutableMap<String, String> newContext = action.map(mapConsumer -> ((TransitionAction<P>) mapConsumer).apply(context, param)).orElse(context);
                     Optional<String> newError = Optional.empty();
                     S newState = transition.getTo();
                     final MachineInstanceImpl<S, E> newMachine = new MachineInstanceImpl<>(id, def, newState, newContext, history, newError, persistenceCallback);
-                    return persistenceCallback.update(newMachine);
+                    final ImmutableMap<String, Object> stashStore = action.get().getStashStore();
+                    final Machine<S, E> updatedMachine = persistenceCallback.update(newMachine);
+                    return new MachineAndStash<>(updatedMachine, stashStore);
                 } catch (Throwable t) {
                     def.getErrorHandler().accept(new DefaultErrorData<>(transition, param, t));
                     Optional<String> newError = Optional.of(t.getMessage());
                     final MachineInstanceImpl<S, E> newMachine = new MachineInstanceImpl<>(id, def, currentState, context, history, newError, persistenceCallback);
-                    return persistenceCallback.update(newMachine);
+                    final Machine<S, E> updatedMachine = persistenceCallback.update(newMachine);
+                    return new MachineAndStash<>(updatedMachine, ImmutableMap.<String, Object>builder().build());
                 }
             });
+            final Machine<S, E> machine = machineAndStash.getMachine();
             if (!machine.isErrorState())
-                transition.getPostAction().ifPresent(transitionAction -> ((TransitionPostAction<P>) transitionAction).accept(machine.getContext(), param));
+                transition.getPostAction().ifPresent(pa -> {
+                    final TransitionPostAction<P> postAction = (TransitionPostAction<P>) pa;
+                    postAction.setStash(ImmutableMap.<String, Object>builder().putAll(machineAndStash.getStashStore()).build());
+                    postAction.accept(machine.getContext(), param);
+                });
             return ((MachineInstanceImpl) machine).tryStp();
         } catch (Exception e) {
             throw new TransitionException(this, transition, e);
@@ -185,30 +193,6 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
     @Override
     public boolean isTerminalState() {
         return def.getTerminalStates().contains(currentState);
-    }
-
-    private static class VoidMachineConsumer<S, E> implements Consumer<Machine<S, E>> {
-        @Override
-        public void accept(Machine<S, E> seMachine) {
-        }
-    }
-
-    private class StateAndContext {
-        private final S state;
-        private ImmutableMap<String, String> context;
-
-        public StateAndContext(S state, ImmutableMap<String, String> context) {
-            this.state = state;
-            this.context = context;
-        }
-
-        public S getState() {
-            return state;
-        }
-
-        public ImmutableMap<String, String> getContext() {
-            return context;
-        }
     }
 
 
