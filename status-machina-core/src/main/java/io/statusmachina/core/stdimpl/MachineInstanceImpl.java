@@ -166,7 +166,7 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
                     Optional<String> newError = Optional.empty();
                     S newState = transition.getTo();
                     final MachineInstanceImpl<S, E> newMachine = new MachineInstanceImpl<>(id, def, newState, newContext, history, newError, persistenceCallback);
-                    final ImmutableMap<String, Object> stashStore = action.get().getStashStore();
+                    final ImmutableMap<String, Object> stashStore = action.map(TransitionAction::getStashStore).orElseGet(() -> ImmutableMap.<String, Object>builder().build());
                     final Machine<S, E> updatedMachine = persistenceCallback.update(newMachine);
                     return new MachineAndStash<>(updatedMachine, stashStore);
                 } catch (Throwable t) {
