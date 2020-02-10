@@ -23,7 +23,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.function.Consumer;
 
 public class MachineInstanceImpl<S, E> implements Machine<S, E> {
     private final Logger LOGGER = LoggerFactory.getLogger(MachineInstanceImpl.class);
@@ -33,6 +32,7 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
     private final MachineDefinition<S, E> def;
     private final ImmutableMap<String, String> context;
     private final ImmutableList<TransitionRecord<S, E>> history;
+    private final ErrorType errorType;
     private final Optional<String> error;
 
     private final S currentState;
@@ -67,6 +67,7 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
         this.currentState = def.getInitialState();
         this.context = ImmutableMap.<String, String>builder().putAll(context).build();
         this.error = Optional.empty();
+        this.errorType = ErrorType.NONE;
         this.persistenceCallback = persistenceCallback;
 
         if (LOGGER.isDebugEnabled())
@@ -82,6 +83,7 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
             S currentState,
             Map<String, String> context,
             List<TransitionRecord<S, E>> history,
+            ErrorType errorType,
             Optional<String> error,
             MachinePersistenceCallback<S, E> persistenceCallback
     ) throws TransitionException {
@@ -92,6 +94,7 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
         this.error = error;
         this.currentState = currentState;
         this.context = ImmutableMap.<String, String>builder().putAll(context).build();
+        this.errorType = errorType;
         this.persistenceCallback = persistenceCallback;
         if (LOGGER.isDebugEnabled())
             LOGGER.debug("creating a new state machine instance of type {}, with ID {} in state {}", def.getName(), id, def.getStateToString().apply(currentState));
@@ -115,6 +118,11 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
     @Override
     public List<TransitionRecord<S, E>> getHistory() {
         return new ArrayList<>(history);
+    }
+
+    @Override
+    public ErrorType getErrorType() {
+        return errorType;
     }
 
     @Override
@@ -182,7 +190,7 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
         Optional<String> newError = Optional.empty();
         ImmutableMap<String, String> newContext = ImmutableMap.<String, String>builder().putAll(context).build();
 
-        return new MachineInstanceImpl<S, E>(id, def, state, newContext, history, newError, persistenceCallback);
+        return new MachineInstanceImpl<S, E>(id, def, state, newContext, history,ErrorType.NONE,  newError, persistenceCallback);
     }
 
     private Machine<S, E> tryStp() throws TransitionException {
@@ -218,7 +226,7 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
                             }
                     ).orElse(context);
                     Optional<String> newError = Optional.empty();
-                    final MachineInstanceImpl<S, E> newMachine = new MachineInstanceImpl<>(id, def, newState, newContext, history, newError, persistenceCallback);
+                    final MachineInstanceImpl<S, E> newMachine = new MachineInstanceImpl<>(id, def, newState, newContext, history, ErrorType.NONE, newError, persistenceCallback);
                     final ImmutableMap<String, Object> stashStore = action.map(TransitionAction::getStashStore).orElseGet(() -> ImmutableMap.<String, Object>builder().build());
                     if (LOGGER.isDebugEnabled())
                         LOGGER.debug("transition for state machine instance of type {}, with ID {}, out of state {} to state {} completed, preparing to save", def.getName(), id, def.getStateToString().apply(currentState), def.getStateToString().apply(newState));
@@ -230,9 +238,7 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
                     if (LOGGER.isDebugEnabled())
                         LOGGER.debug("commited persistence transaction for state machine instance of type {}, with ID {} - invoking error handler and saving", def.getName(), id);
                     def.getErrorHandler().accept(new DefaultErrorData<>(transition, param, t));
-                    Optional<String> newError = Optional.of(t.getMessage());
-                    final MachineInstanceImpl<S, E> newMachine = new MachineInstanceImpl<>(id, def, currentState, context, history, newError, persistenceCallback);
-                    final Machine<S, E> updatedMachine = persistenceCallback.update(newMachine);
+                    final Machine<S, E> updatedMachine = applyErrorState(t, ErrorType.TRANSITION);
                     return new MachineAndStash<>(updatedMachine, ImmutableMap.<String, Object>builder().build());
                 }
             });
@@ -244,14 +250,24 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
                     if (LOGGER.isDebugEnabled())
                         LOGGER.debug("executing post transition action for state machine instance of type {}, with ID {}", def.getName(), id);
                     final TransitionPostAction<P> postAction = (TransitionPostAction<P>) pa;
-                    postAction.setStash(ImmutableMap.<String, Object>builder().putAll(machineAndStash.getStashStore()).build());
-                    postAction.accept(machine.getContext(), param);
+                    try {
+                        postAction.setStash(ImmutableMap.<String, Object>builder().putAll(machineAndStash.getStashStore()).build());
+                        postAction.accept(context, param);
+                    } catch (Throwable t) {
+                        applyErrorState(t, ErrorType.POST_TRANSITION);
+                    }
                 });
             return ((MachineInstanceImpl) machine).tryStp();
         } catch (Exception e) {
             LOGGER.error("transition for state machine instance of type " + def.getName() + ", with ID " + id + ", out of state " + def.getStateToString().apply(currentState) + " to state " + def.getStateToString().apply(newState), e);
             throw new TransitionException(this, transition, e);
         }
+    }
+
+    private Machine<S, E> applyErrorState(Throwable t, ErrorType newErrorType) {
+        Optional<String> newError = Optional.of(t.getMessage());
+        final MachineInstanceImpl<S, E> newMachine = new MachineInstanceImpl<>(id, def, currentState, context, history, newErrorType, newError, persistenceCallback);
+        return persistenceCallback.update(newMachine);
     }
 
     @Override

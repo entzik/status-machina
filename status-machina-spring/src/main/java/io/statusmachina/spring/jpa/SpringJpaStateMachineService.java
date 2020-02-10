@@ -95,7 +95,7 @@ public class SpringJpaStateMachineService<S, E> implements StateMachineService<S
         final Map<String, String> context = externalState.getContext();
         final S currentstate = def.getStringToState().apply(externalState.getCurrentState());
 
-        return new MachineInstanceImpl<S, E>(id, def, currentstate, context, Collections.emptyList(), Optional.empty(), machinePersistenceCallback);
+        return new MachineInstanceImpl<S, E>(id, def, currentstate, context, Collections.emptyList(), ErrorType.NONE, Optional.empty(), machinePersistenceCallback);
     }
 
     public void update(Machine<S, E> instance) {
@@ -126,7 +126,7 @@ public class SpringJpaStateMachineService<S, E> implements StateMachineService<S
 
     private List<MachineSnapshot> getMachineSnapshots(List<ExternalState> states) {
         return states
-                .stream().map(state -> new MachineSnapshot(state.getType(), state.getId(), state.getCurrentState(), state.getContext(), state.getError()))
+                .stream().map(state -> new MachineSnapshot(state.getType(), state.getId(), state.getCurrentState(), state.getContext(), state.getErrorType(), state.getError()))
                 .collect(Collectors.toList());
     }
 
@@ -137,6 +137,7 @@ public class SpringJpaStateMachineService<S, E> implements StateMachineService<S
                 .setId(machineInstance.getId())
                 .setType(machineInstance.getDefinition().getName())
                 .setCurrentState(machineInstance.isErrorState() ? ERROR_STATE : machineInstance.getDefinition().getStateToString().apply(machineInstance.getCurrentState()))
+                .setErrorType(machineInstance.getErrorType())
                 .setError(machineInstance.getError().orElse("no error"))
                 .setContext(new HashMap<>(machineInstance.getContext()))
                 .setLocked(true)
@@ -150,6 +151,7 @@ public class SpringJpaStateMachineService<S, E> implements StateMachineService<S
         currentState
                 .setType(machineInstance.getDefinition().getName())
                 .setCurrentState(machineInstance.isErrorState() ? ERROR_STATE : machineInstance.getDefinition().getStateToString().apply(machineInstance.getCurrentState()))
+                .setErrorType(machineInstance.getErrorType())
                 .setError(machineInstance.getError().orElse("no error"))
                 .setLocked(true)
                 .setDone(machineInstance.isTerminalState())

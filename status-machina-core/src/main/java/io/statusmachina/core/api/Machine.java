@@ -53,6 +53,11 @@ public interface Machine<S, E> {
     /**
      * @return if the machine is in an error state, it returns the description. otherwise an empty optional
      */
+    ErrorType getErrorType();
+
+    /**
+     * @return if the machine is in an error state, it returns the description. otherwise an empty optional
+     */
     Optional<String> getError();
 
     /**

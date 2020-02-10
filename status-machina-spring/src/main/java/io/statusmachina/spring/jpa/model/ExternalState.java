@@ -16,6 +16,8 @@
 
 package io.statusmachina.spring.jpa.model;
 
+import io.statusmachina.core.api.ErrorType;
+
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.util.Map;
@@ -45,6 +47,10 @@ public class ExternalState {
     @Column(name = "crt_state")
     @NotNull
     String currentState;
+
+    @Column(name = "error_type")
+    @Enumerated(EnumType.STRING)
+    ErrorType errorType;
 
     @Column(name = "error")
     String error;
@@ -139,6 +145,15 @@ public class ExternalState {
         return this;
     }
 
+    public ErrorType getErrorType() {
+        return errorType;
+    }
+
+    public ExternalState setErrorType(ErrorType errorType) {
+        this.errorType = errorType;
+        return this;
+    }
+
     public ExternalState setVersion(int version) {
         this.version = version;
         return this;
@@ -152,4 +167,6 @@ public class ExternalState {
         this.done = done;
         return this;
     }
+
+
 }
