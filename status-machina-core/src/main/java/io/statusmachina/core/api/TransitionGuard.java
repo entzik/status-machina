@@ -17,18 +17,18 @@ package io.statusmachina.core.api;
 
 import com.google.common.collect.ImmutableMap;
 
-import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * A transition guard determines if the transition it is attached to can be activated or not. The decision must be taken
  * upon examining the machine's context
  */
-public interface TransitionGuard extends Function<ImmutableMap<String, String>, Boolean> {
+public interface TransitionGuard extends Predicate<ImmutableMap<String, String>> {
     /**
      * decide whether the transition can be executed
-     * @param immutableMap the state machine's context
+     * @param context the state machine's context
      * @return true of the machine can be activated
      */
     @Override
-    Boolean apply(ImmutableMap<String, String> immutableMap);
+    boolean test(ImmutableMap<String, String> context);
 }

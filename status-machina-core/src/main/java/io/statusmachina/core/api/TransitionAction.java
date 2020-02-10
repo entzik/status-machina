@@ -34,6 +34,9 @@ import java.util.function.BiFunction;
 public interface TransitionAction<P> extends BiFunction<ImmutableMap<String,String>, P, ImmutableMap<String,String>> {
     HashMap<String, Object> stashStore = new HashMap<>();
 
+    @Override
+    ImmutableMap<String, String> apply(ImmutableMap<String, String> context, P parameter);
+
     /**
      * store an object in to a stash for it to be passed along to the {@link TransitionPostAction}
      * @param key the object's key in the stash

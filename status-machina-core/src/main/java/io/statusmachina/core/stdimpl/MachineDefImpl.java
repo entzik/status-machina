@@ -167,7 +167,7 @@ public class MachineDefImpl<S, E> implements MachineDefinition<S, E> {
     public Optional<Transition<S, E>> findStpTransition(S state, ImmutableMap<String,String> context) {
         return transitions.stream()
                 .filter(t -> t.getFrom().equals(state) && t.isSTP())
-                .filter(t -> t.getGuard().map(guard -> guard.apply(context)).orElse(true))
+                .filter(t -> t.getGuard().map(guard -> guard.test(context)).orElse(true))
                 .findFirst();
     }
 

@@ -112,7 +112,6 @@ public interface MachineDefinition<S, E> {
     Function<String, S> getStringToState();
 
     /**
-     * @deprecated
      * @return a handler that converts an event into its string representation
      */
     Function<E, String> getEventToString();

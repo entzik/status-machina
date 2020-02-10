@@ -30,6 +30,7 @@ dependencies {
     // This dependency is exported to consumers, that is to say found on their compile classpath.
     // api("org.apache.commons:commons-math3:3.6.1")
     api("com.google.guava:guava:28.1-jre")
+    implementation("org.slf4j:slf4j-api:1.7.30")
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.3.2")
     testImplementation("org.junit.jupiter:junit-jupiter-engine:5.3.2")
