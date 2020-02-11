@@ -21,6 +21,18 @@ package io.statusmachina.core.api;
 public class TransitionException extends RuntimeException {
     private final Machine machineInstance;
     private final Transition<?, ?> transition;
+    private ErrorType errorType;
+
+    /**
+     * transition exception that wraps an underlying exception
+     */
+    public TransitionException(ErrorType errorType, Throwable cause) {
+        super(cause);
+        this.errorType = errorType;
+        this.machineInstance = null;
+        this.transition = null;
+
+    }
 
     /**
      * @param machineInstance the affected state machine
@@ -28,9 +40,10 @@ public class TransitionException extends RuntimeException {
      * @param <S> the state type
      * @param <E> the event type
      */
-    public <S,E> TransitionException(Machine<S, E> machineInstance, Transition<S, E> transition) {
+    public <S,E> TransitionException(Machine<S, E> machineInstance, Transition<S, E> transition, ErrorType errorType) {
         this.machineInstance = machineInstance;
         this.transition = transition;
+        this.errorType = errorType;
     }
 
     /**
@@ -40,10 +53,11 @@ public class TransitionException extends RuntimeException {
      * @param <S> the state type
      * @param <E> the event type
      */
-    public <S,E> TransitionException(Machine<S, E> machineInstance, Transition<S, E> transition, Throwable cause) {
+    public <S,E> TransitionException(Machine<S, E> machineInstance, Transition<S, E> transition, ErrorType errorType, Throwable cause) {
         super(cause);
         this.machineInstance = machineInstance;
         this.transition = transition;
+        this.errorType = errorType;
     }
 
     /**
@@ -58,5 +72,9 @@ public class TransitionException extends RuntimeException {
      */
     public Transition<?, ?> getTransition() {
         return transition;
+    }
+
+    public ErrorType getErrorType() {
+        return errorType;
     }
 }

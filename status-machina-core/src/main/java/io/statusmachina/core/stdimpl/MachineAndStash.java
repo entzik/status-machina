@@ -21,10 +21,18 @@ import io.statusmachina.core.api.Machine;
 public class MachineAndStash<S,E> {
     final private Machine<S, E> machineInstance;
     final private ImmutableMap<String, Object> stashStore;
+    final private Throwable errorCause;
 
     public MachineAndStash(Machine<S, E> machineInstance, ImmutableMap<String, Object> stashStore) {
         this.machineInstance = machineInstance;
         this.stashStore = stashStore;
+        this.errorCause = null;
+    }
+
+    public MachineAndStash(Machine<S, E> machineInstance, Throwable errorCause) {
+        this.machineInstance = machineInstance;
+        this.errorCause = errorCause;
+        this.stashStore = ImmutableMap.of();
     }
 
     public Machine<S, E> getMachine() {
@@ -33,5 +41,9 @@ public class MachineAndStash<S,E> {
 
     public ImmutableMap<String, Object> getStashStore() {
         return stashStore;
+    }
+
+    public Throwable getErrorCause() {
+        return errorCause;
     }
 }

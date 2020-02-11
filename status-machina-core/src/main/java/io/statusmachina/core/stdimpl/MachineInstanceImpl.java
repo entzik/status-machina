@@ -190,7 +190,7 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
         Optional<String> newError = Optional.empty();
         ImmutableMap<String, String> newContext = ImmutableMap.<String, String>builder().putAll(context).build();
 
-        return new MachineInstanceImpl<S, E>(id, def, state, newContext, history,ErrorType.NONE,  newError, persistenceCallback);
+        return new MachineInstanceImpl<S, E>(id, def, state, newContext, history, ErrorType.NONE, newError, persistenceCallback);
     }
 
     private Machine<S, E> tryStp() throws TransitionException {
@@ -208,14 +208,15 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
     }
 
     private <P> Machine<S, E> applyTransition(Transition<S, E> transition, P param) throws TransitionException {
-            S newState = transition.getTo();
-        try {
+        S newState = transition.getTo();
 
-            if (LOGGER.isDebugEnabled())
-                LOGGER.debug("preparing to apply transition  for state machine instance of type {}, with ID {}, out of state {} to state {}", def.getName(), id, def.getStateToString().apply(currentState), def.getStateToString().apply(newState));
-            if (LOGGER.isDebugEnabled())
-                LOGGER.debug("starting persistence transaction for state machine instance of type {}, with ID {}", def.getName(), id);
-            final MachineAndStash<S, E> machineAndStash = persistenceCallback.runInTransaction(() -> {
+        if (LOGGER.isDebugEnabled())
+            LOGGER.debug("preparing to apply transition  for state machine instance of type {}, with ID {}, out of state {} to state {}", def.getName(), id, def.getStateToString().apply(currentState), def.getStateToString().apply(newState));
+        if (LOGGER.isDebugEnabled())
+            LOGGER.debug("starting persistence transaction for state machine instance of type {}, with ID {}", def.getName(), id);
+        final MachineAndStash<S, E> machineAndStash;
+        try {
+            machineAndStash = persistenceCallback.runInTransaction(() -> {
                 final Optional<TransitionAction<?>> action = transition.getAction();
                 try {
                     ImmutableMap<String, String> newContext = action.map(
@@ -239,28 +240,33 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
                         LOGGER.debug("commited persistence transaction for state machine instance of type {}, with ID {} - invoking error handler and saving", def.getName(), id);
                     def.getErrorHandler().accept(new DefaultErrorData<>(transition, param, t));
                     final Machine<S, E> updatedMachine = applyErrorState(t, ErrorType.TRANSITION);
-                    return new MachineAndStash<>(updatedMachine, ImmutableMap.<String, Object>builder().build());
+                    return new MachineAndStash<>(updatedMachine, t);
                 }
             });
-            if (LOGGER.isDebugEnabled())
-                LOGGER.debug("commited persistence transaction for state machine instance of type {}, with ID {}", def.getName(), id);
-            final Machine<S, E> machine = machineAndStash.getMachine();
-            if (!machine.isErrorState())
-                transition.getPostAction().ifPresent(pa -> {
-                    if (LOGGER.isDebugEnabled())
-                        LOGGER.debug("executing post transition action for state machine instance of type {}, with ID {}", def.getName(), id);
-                    final TransitionPostAction<P> postAction = (TransitionPostAction<P>) pa;
-                    try {
-                        postAction.setStash(ImmutableMap.<String, Object>builder().putAll(machineAndStash.getStashStore()).build());
-                        postAction.accept(context, param);
-                    } catch (Throwable t) {
-                        applyErrorState(t, ErrorType.POST_TRANSITION);
-                    }
-                });
-            return ((MachineInstanceImpl) machine).tryStp();
         } catch (Exception e) {
-            LOGGER.error("transition for state machine instance of type " + def.getName() + ", with ID " + id + ", out of state " + def.getStateToString().apply(currentState) + " to state " + def.getStateToString().apply(newState), e);
-            throw new TransitionException(this, transition, e);
+            throw new TransitionException(ErrorType.TRANSITION, e);
+        }
+
+        if (LOGGER.isDebugEnabled())
+            LOGGER.debug("commited persistence transaction for state machine instance of type {}, with ID {}", def.getName(), id);
+        final Machine<S, E> machine = machineAndStash.getMachine();
+
+        if (machine.isErrorState()) {
+            throw new TransitionException(machineAndStash.getMachine(), transition, ErrorType.TRANSITION, machineAndStash.getErrorCause());
+        } else {
+            transition.getPostAction().ifPresent(pa -> {
+                if (LOGGER.isDebugEnabled())
+                    LOGGER.debug("executing post transition action for state machine instance of type {}, with ID {}", def.getName(), id);
+                final TransitionPostAction<P> postAction = (TransitionPostAction<P>) pa;
+                try {
+                    postAction.setStash(ImmutableMap.<String, Object>builder().putAll(machineAndStash.getStashStore()).build());
+                    postAction.accept(context, param);
+                } catch (Throwable t) {
+                    applyErrorState(t, ErrorType.POST_TRANSITION);
+                    throw new TransitionException(machine, transition, ErrorType.POST_TRANSITION, t);
+                }
+            });
+            return ((MachineInstanceImpl) machine).tryStp();
         }
     }
 
