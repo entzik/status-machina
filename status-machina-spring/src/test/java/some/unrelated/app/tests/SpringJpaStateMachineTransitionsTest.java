@@ -36,8 +36,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static java.util.stream.Collectors.toList;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.*;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(
@@ -54,12 +53,13 @@ public class SpringJpaStateMachineTransitionsTest {
     MachineDefinition<TestOneStateMachineConfiguration.States, TestOneStateMachineConfiguration.Events> def;
 
     @Test
-    public void testStateMachineHelper_newMachineWithId() {
+    public void testStateMachineHelper_newMachineWithId_startAgain() {
         final String fixedId = UUID.randomUUID().toString();
         try {
             service.newMachine(def, fixedId, Map.of()).start();
             final Machine<States, Events> instance = service.read( def, fixedId);
             assertThat(instance.getCurrentState()).isEqualTo(States.S2).as("states match");
+            assertThatThrownBy(instance::start).isInstanceOf(IllegalStateException.class).hasMessageContaining("machine is already started");
         } catch (Exception e) {
             fail("", e);
         }

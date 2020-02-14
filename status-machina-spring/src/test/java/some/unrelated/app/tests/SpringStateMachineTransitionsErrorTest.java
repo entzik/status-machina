@@ -66,9 +66,12 @@ public class SpringStateMachineTransitionsErrorTest {
             assertThat(instance.isErrorState()).isTrue();
             assertThat(instance.getErrorType()).isEqualTo(TRANSITION);
             assertThat(instance.getError().get()).isEqualTo("whatever");
-        } catch (Exception e) {
+            assertThatThrownBy(() -> instance.sendEvent(Events.E23)).isInstanceOf(IllegalStateException.class).hasMessageContaining("a state machine cannot accept event when in error state:  type");
+            assertThatThrownBy(() -> instance.resume()).isInstanceOf(IllegalStateException.class).hasMessageContaining("machine cannot be resumed out of error state:  type ");
+        } catch (Exception e) {e.printStackTrace();
             fail(e.toString());
         }
+
     }
 
     @Test
@@ -84,6 +87,19 @@ public class SpringStateMachineTransitionsErrorTest {
             assertThat(instance.isErrorState()).isTrue();
             assertThat(instance.getErrorType()).isEqualTo(POST_TRANSITION);
             assertThat(instance.getError().get()).isEqualTo("post whatever");
+            assertThatThrownBy(() -> instance.sendEvent(Events.E23)).isInstanceOf(IllegalStateException.class).hasMessageContaining("a state machine cannot accept event when in error state:  type");
+            assertThatThrownBy(instance::resume).isInstanceOf(IllegalStateException.class).hasMessageContaining("machine cannot be resumed out of error state:  type ");
+        } catch (Exception e) {
+            fail(e.toString());
+        }
+    }
+
+    @Test
+    public void testStateMachineHelper_attemptResumeNew() {
+        final String fixedId = UUID.randomUUID().toString();
+        try {
+            final Machine<States, Events> instance = service.newMachine(def2, fixedId, Map.of());
+            assertThatThrownBy(instance::resume).isInstanceOf(IllegalStateException.class).hasMessageContaining("machine cannot be resumed out of the initial state, call start()");
         } catch (Exception e) {
             fail(e.toString());
         }

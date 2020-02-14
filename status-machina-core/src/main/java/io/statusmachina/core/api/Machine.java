@@ -73,6 +73,12 @@ public interface Machine<S, E> {
     Machine<S, E> start();
 
     /**
+     * attempts to trigger stp transitions out of the current state
+     * @return the same machine if no stp transitions are configured out of the current state, otherwise a machine in the state at the end of the stp transitions chain
+     */
+    Machine<S, E> resume();
+
+    /**
      * delivers an event to the state machine.
      *
      * @param event the event to be delivered

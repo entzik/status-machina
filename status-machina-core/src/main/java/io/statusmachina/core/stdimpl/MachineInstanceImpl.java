@@ -149,21 +149,37 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
             throw new IllegalStateException("machine is already started");
     }
 
+    public Machine<S, E> resume() {
+        if (LOGGER.isDebugEnabled())
+            LOGGER.debug("resuming state machine instance of type {}, with ID {}, out of state {}", def.getName(), id, def.getStateToString().apply(currentState));
+        if (currentState.equals(def.getInitialState())) {
+            throw new IllegalStateException("machine cannot be resumed out of the initial state, call start()");
+        } else if (isErrorState()) {
+            throw new IllegalStateException("machine cannot be resumed out of error state:  type " + def.getName() + ", id " + id + "  error " + error.get());
+        } else
+            return tryStp();
+    }
+
     @Override
     public Machine<S, E> sendEvent(E event) throws TransitionException {
         if (LOGGER.isDebugEnabled())
             LOGGER.debug("state machine instance of type {}, with ID {} receives event {}", def.getName(), id, def.getEventToString().apply(event));
-        Transition<S, E> transition = def.findEventTransion(currentState, event).orElseThrow(() -> new IllegalStateException("for machines of type " + def.getName() + " event " + event.toString() + " does not trigger any transition out of state " + currentState.toString()));
-        if (LOGGER.isDebugEnabled())
-            LOGGER.debug("a transition was found for machine instance of type {}, with ID {} from state {} to state {} on event {}",
-                    def.getName(),
-                    id,
-                    def.getEventToString().apply(event),
-                    def.getStateToString().apply(currentState),
-                    def.getStateToString().apply(transition.getTo())
-            );
+        if (isErrorState()) {
+            LOGGER.error("a state machine cannot accept event when in error state:  type {}, id {}, error '{}'", def.getName(), id, error.get());
+            throw new IllegalStateException("a state machine cannot accept event when in error state:  type " + def.getName() + ", id " + id + "  error " + error.get());
+        } else {
+            Transition<S, E> transition = def.findEventTransion(currentState, event).orElseThrow(() -> new IllegalStateException("for machines of type " + def.getName() + " event " + event.toString() + " does not trigger any transition out of state " + currentState.toString()));
+            if (LOGGER.isDebugEnabled())
+                LOGGER.debug("a transition was found for machine instance of type {}, with ID {} from state {} to state {} on event {}",
+                        def.getName(),
+                        id,
+                        def.getEventToString().apply(event),
+                        def.getStateToString().apply(currentState),
+                        def.getStateToString().apply(transition.getTo())
+                );
 
-        return applyTransition(transition, null);
+            return applyTransition(transition, null);
+        }
     }
 
     @Override
