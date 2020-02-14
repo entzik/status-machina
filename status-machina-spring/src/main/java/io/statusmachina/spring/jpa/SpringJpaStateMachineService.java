@@ -85,7 +85,8 @@ public class SpringJpaStateMachineService<S, E> implements StateMachineService<S
     }
 
     public ExternalState create(Machine<S, E> instance) {
-        final ExternalState entity = extractExternalState(instance);
+        final String id = instance.getId();
+        final ExternalState entity = externalStateRepository.findById(id).map(es -> updateExternalState(es, instance)).orElseGet(() -> extractExternalState(instance));
         return externalStateRepository.save(entity);
     }
 

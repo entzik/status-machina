@@ -66,6 +66,21 @@ public class SpringJpaStateMachineTransitionsTest {
     }
 
     @Test
+    public void testStateMachineHelper_reinitMachineWithId() {
+        final String fixedId = UUID.randomUUID().toString();
+        try {
+            service.newMachine(def, fixedId, Map.of()).start();
+            final Machine<States, Events> instance = service.read( def, fixedId);
+            assertThat(instance.getCurrentState()).isEqualTo(States.S2).as("states match");
+            service.newMachine(def, fixedId, Map.of()).start();
+            final Machine<States, Events> instance2 = service.read( def, fixedId);
+            assertThat(instance2.getCurrentState()).isEqualTo(States.S2).as("states match");
+        } catch (Exception e) {
+            fail("", e);
+        }
+    }
+
+    @Test
     public void testStateMachineHelper_newMachine() {
         try {
             final String id = service.newMachine(def, new HashMap<>()).start().getId();
