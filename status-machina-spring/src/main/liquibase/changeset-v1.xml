@@ -37,6 +37,7 @@
             <column name="crt_state" type="varchar(255)"></column>
             <column name="done" type="boolean"></column>
             <column name="error" type="varchar(255)"></column>
+            <column name="error_type" type="varchar(255)"></column>
             <column name="last_modified" type="bigint"></column>
             <column name="locked" type="boolean"></column>
             <column name="typename" type="varchar(255)"></column>
