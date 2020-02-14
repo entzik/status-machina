@@ -41,7 +41,7 @@ import static org.assertj.core.api.Assertions.fail;
         classes = TestSpringBootApp.class,
         webEnvironment = SpringBootTest.WebEnvironment.NONE
 )
-public class SpringJpaStateMachineServiceTest {
+public class SpringJpaStateMachinePersistenceTest {
 
     @Autowired
     StateMachineService<States, Events> service;
