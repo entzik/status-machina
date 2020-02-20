@@ -43,6 +43,9 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.junit.jupiter:junit-jupiter-api")
     testImplementation("org.junit.jupiter:junit-jupiter-engine")
+    testRuntimeOnly("org.springframework.boot:spring-boot-starter")
+    testRuntimeOnly("org.springframework.boot:spring-boot-starter-data-jpa")
+    testRuntimeOnly("javax.validation:validation-api")
     testRuntimeOnly("com.h2database:h2")
     testImplementation("org.assertj:assertj-core:3.4.1")
 }
