@@ -19,7 +19,7 @@
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.0.xsd http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
-    <changeSet id="22" author="ek">
+    <changeSet id="xxx" author="ek">
         <createTable tableName="sm_context_entries">
             <column name="machine_id" type="varchar(40)"></column>
             <column name="name" type="varchar(255)"></column>
@@ -38,6 +38,7 @@
             <column name="done" type="boolean"></column>
             <column name="error" type="varchar(255)"></column>
             <column name="error_type" type="varchar(255)"></column>
+            <column name="creation_time" type="bigint"></column>
             <column name="last_modified" type="bigint"></column>
             <column name="locked" type="boolean"></column>
             <column name="typename" type="varchar(255)"></column>

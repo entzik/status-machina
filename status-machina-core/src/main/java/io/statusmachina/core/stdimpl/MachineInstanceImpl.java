@@ -276,7 +276,7 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
                 final TransitionPostAction<P> postAction = (TransitionPostAction<P>) pa;
                 try {
                     postAction.setStash(ImmutableMap.<String, Object>builder().putAll(machineAndStash.getStashStore()).build());
-                    postAction.accept(context, param);
+                    postAction.accept(machineAndStash.getMachine().getContext(), param);
                 } catch (Throwable t) {
                     applyErrorState(t, ErrorType.POST_TRANSITION);
                     throw new TransitionException(machine, transition, ErrorType.POST_TRANSITION, t);
