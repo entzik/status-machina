@@ -33,10 +33,9 @@ dependencies {
 
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
     // implementation("com.google.guava:guava:26.0-jre")
-    implementation("org.springframework.boot:spring-boot-starter")
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-    implementation("org.springframework.retry:spring-retry")
-    implementation("javax.validation:validation-api")
+    compileOnly("org.springframework.boot:spring-boot-starter")
+    compileOnly("org.springframework.boot:spring-boot-starter-data-jpa")
+    compileOnly("javax.validation:validation-api")
 
     implementation("com.google.guava:guava:28.1-jre")
 
@@ -45,7 +44,6 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-api")
     testImplementation("org.junit.jupiter:junit-jupiter-engine")
     testRuntimeOnly("com.h2database:h2")
-//    testRuntimeOnly("org.liquibase:liquibase-core")
     testImplementation("org.assertj:assertj-core:3.4.1")
 }
 
