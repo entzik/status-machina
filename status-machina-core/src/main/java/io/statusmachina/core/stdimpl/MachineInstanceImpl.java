@@ -287,7 +287,8 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
     }
 
     private Machine<S, E> applyErrorState(Throwable t, ErrorType newErrorType) {
-        Optional<String> newError = Optional.of(t.getMessage());
+        final String message = t.getMessage();
+        Optional<String> newError = Optional.of(message == null ? t.getClass().getSimpleName() :  message);
         final MachineInstanceImpl<S, E> newMachine = new MachineInstanceImpl<>(id, def, currentState, context, history, newErrorType, newError, persistenceCallback);
         return persistenceCallback.update(newMachine);
     }
