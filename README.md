@@ -68,8 +68,16 @@ An action can be executed each time a the machine transitions from one state to 
 A transition action consumes the machine's context and the event's parameter, if one was provided, and produces a new context which will become the machine's context if the action succeeds.
 
 ```java
-
+class SomeAction implement TransitionAction {
+    @Override
+    public ImmutableMap<String, String> apply(ImmutableMap context, Object eventParameter) {
+        // perform an action, modify context
+        return modifiedContext;
+    }
+};
 ```
+
+You notice the context is an immutable map, so if you need to modify it you need to clone it.
 
 #### Transition Guards
 
