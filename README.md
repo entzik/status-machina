@@ -1,4 +1,7 @@
 # Status Machina
+
+__WORK IN PROGRESS__
+
 A small, simple and pragmatic state machine engine targeted at resilient micro-services orchestration.
 
 It offers a core library and a spring integration library.
@@ -50,5 +53,45 @@ final MachineDefinition<States, Events> def = new EnumBasedMachineDefinitionBuil
 
 ```
 
-Once the state machine is defined, you can start interacting with it. You do so by creating an instance and interacting with it:
+### Transitions
+
+A transition takes the machine from a state to another. You probably already noticed by looking at the code that they can be of two kinds: event transitions and STP transitions.
+
+Event transitions are triggerd when an appropriate event is delivered to the machine. If a machine is in a state and a transition is configured our of that state for a specific event, then when that event is delivered, the machine will immediately transition to the target state of the transition.
+
+STP stands for Straight Through Processing. STP transitions are triggered automatically: when a machine reaches a state, and an STP transition is configured out of that state, the machine will immediately transition to the target state of the STP transition.
+
+#### Transition Actions
+
+An action can be executed each time a the machine transitions from one state to another. This allows the state machine to interact with external services. This can be a remote procedure call, posting a message on a message bus or anything else. If executing the action fails, the machine will enter an error state.
+
+A transition action consumes the machine's context and the event's parameter, if one was provided, and produces a new context which will become the machine's context if the action succeeds.
+
+```java
+
+```
+
+#### Transition Guards
+
+Transitions can be guarded. A Guard is a predicate that consumes the machine's current context and must evaluate to true in order for the transition to activate. It can be passed to any transition as a lambda:
+
+```java
+    final Transition<States, Events> t3 = stp(States.S3, States.S4, context -> "some-value".equals(context.get("context-key")));
+```
+
+
+### Creating a state machine and interracting with it
+
+Once the state machine is defined you can create an instance and start interacting with it.
+
+To instantiate a state machine you need to provide a definition, a set of callbacks that will help you manage the machine's lifecycle and the initial context.
+
+The callbacks will allow you to react when a machine needs to be saved to persistent storage.
+
+The context is the initial data you inject in the machine. The context can be read and moified by transition actions.
+
+```java
+            final Machine<States, Events> instance = new MachineInstanceImpl<>(def, machinePersistenceCallback, new HashMap<>()).start();
+```
+
 
