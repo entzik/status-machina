@@ -15,7 +15,7 @@ Status machina can be used on its own or in the context of a Spring Boot project
 
 A state machine is defined in terms of states and transitions. Transitions are triggered by events. At the lowest level, states and events can be of any type, but it's most covenient if they are enumerations. 
 
-Defining an enumeration based state machine is very easy. Given the machines states and evente enumerations
+Defining an enumeration based state machine is very easy. Given the machine's states and event enumerations
 
 ```java
 enum States {
