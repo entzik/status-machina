@@ -18,13 +18,13 @@ A state machine is defined in terms of states and transitions. Transitions are t
 Defining an enumeration based state machine is very easy. Given the machines states and evente enumerations
 
 ```java
-    enum States {
-        S1, S2, S3, S4, S5
-    }
+enum States {
+    S1, S2, S3, S4, S5
+}
 
-    enum Events {
-        E23, E34, E35
-    }
+enum Events {
+    E23, E34, E35
+}
 ```
 
 you first need to define your transitions, then use the composable API to define the machine:
@@ -76,7 +76,7 @@ A transition action consumes the machine's context and the event's parameter, if
 Transitions can be guarded. A Guard is a predicate that consumes the machine's current context and must evaluate to true in order for the transition to activate. It can be passed to any transition as a lambda:
 
 ```java
-    final Transition<States, Events> t3 = stp(States.S3, States.S4, context -> "some-value".equals(context.get("context-key")));
+final Transition<States, Events> t3 = stp(States.S3, States.S4, context -> "some-value".equals(context.get("context-key")));
 ```
 
 
@@ -91,7 +91,7 @@ The callbacks will allow you to react when a machine needs to be saved to persis
 The context is the initial data you inject in the machine. The context can be read and moified by transition actions.
 
 ```java
-            final Machine<States, Events> instance = new MachineInstanceImpl<>(def, machinePersistenceCallback, new HashMap<>()).start();
+final Machine<States, Events> instance = new MachineInstanceImpl<>(def, machinePersistenceCallback, new HashMap<>()).start();
 ```
 
 
