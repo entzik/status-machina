@@ -63,12 +63,12 @@ STP stands for Straight Through Processing. STP transitions are triggered automa
 
 #### Transition Actions
 
-An action can be executed each time a the machine transitions from one state to another. This allows the state machine to interact with external services. This can be a remote procedure call, posting a message on a message bus or anything else. If executing the action fails, the machine will enter an error state.
+An action can be executed each time a the machine transitions from one state to another. This allows the state machine to interact with external services. This can be a remote procedure call, posting a message on a message bus or anything else. If executing the action fails, the machine will enter an error state with sufficient metadata to describe the error condition and context.
 
 A transition action consumes the machine's context and the event's parameter, if one was provided, and produces a new context which will become the machine's context if the action succeeds.
 
 ```java
-class SomeAction implement TransitionAction {
+class SomeTransitionAction implement TransitionAction {
     @Override
     public ImmutableMap<String, String> apply(ImmutableMap context, Object eventParameter) {
         // perform an action, modify context
@@ -78,6 +78,25 @@ class SomeAction implement TransitionAction {
 ```
 
 You notice the context is an immutable map, so if you need to modify it you need to clone it.
+
+#### Post Transition Actions
+
+It is also possible to configure a post transition action. The post transition action, if one is specified, is only invoked after the transition has completed and the machine has durably reached the target state.
+
+If the post transition action fails, the machine will not reach the target state, enter an error state with sufficient metadata to describe the error condition and context.
+
+A post transition action is not allowed to mutate the machine's context, it can only consume it.
+
+```java
+static class SomePostTransitionAction<P> implements TransitionPostAction<P> {
+    @Override
+    public void accept(ImmutableMap<String, String> context, P p) {
+        // do something with context and event parameters
+    }
+}
+```
+
+Post transition actions are typically used to implement notifications related to the new state.
 
 #### Transition Guards
 
