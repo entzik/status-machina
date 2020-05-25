@@ -98,6 +98,33 @@ static class SomePostTransitionAction<P> implements TransitionPostAction<P> {
 
 Post transition actions are typically used to implement notifications related to the new state.
 
+#### Passing Information Between Transition Actions and Post Transition Actions
+
+Sometimes we may need to pass information between actions and post actions. This can of course be done through the context - because the post transition action will receive the context mutated by the action, but if the information is not needed later in the process it will just polute the context.
+
+If such transitent data needs to be passed from an action to the subsequent post action, the stashing mechanism can be used. This will allow an action to stash any object which can then be retrieved (un-stashed) by the post action, like in the example bellow:
+
+```java
+class SomeTransitionAction implement TransitionAction {
+    @Override
+    public ImmutableMap<String, String> apply(ImmutableMap context, Object eventParameter) {
+        // perform an action, modify context
+        stash("my-key", "my object");
+        return modifiedContext;
+    }
+};
+
+static class SomePostTransitionAction<P> implements TransitionPostAction<P> {
+    @Override
+    public void accept(ImmutableMap<String, String> context, P p) {
+        // do something with context and event parameters
+        String stashedValue = getStash("my-key", String.class);
+    }
+}
+```
+
+Please remember the stash only exists during the lifecycle of the transition where it was defined.
+
 #### Transition Guards
 
 Transitions can be guarded. A Guard is a predicate that consumes the machine's current context and must evaluate to true in order for the transition to activate. It can be passed to any transition as a lambda:
