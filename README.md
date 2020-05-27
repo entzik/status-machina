@@ -152,8 +152,25 @@ The callbacks will allow you to react when a machine needs to be saved to persis
 The context is the initial data you inject in the machine. The context can be read and moified by transition actions.
 
 ```java
-final Machine<States, Events> instance = new MachineInstanceImpl<>(def, machinePersistenceCallback, new HashMap<>()).start();
+final Machine<States, Events> instance = new MachineInstanceImpl<>(def, machinePersistenceCallback, new HashMap<>())
+                                            .start();
 ```
 
-Keep in mind you need to explicitely start the state machine after instantiating it.
+Keep in mind you need to explicitely start the state machine after instantiating it. If you have STP transitions out of the initial state, starting the machine will evaluate the guard predicated on each STP transition and fire the first one that matches. 
+
+Pro tip: in order for your machine to be deterministic, you need to make sure guarding conditions on your transitions defined out of the same state are mutually exclusive.
+
+Interacting with a state machine is as easy as sending an event to it:
+
+```java
+final Machine<States, Events> updated = instance.sendEvent(Events.E23);
+```
+
+Remember the state machine is an immutable data structure. Any atempt to mutate its internal state will create a new version of the machine. Once you sent the event, the reference to the old version of the machine, the one you sent your event to, must be discarded.
+
+When sending an event to the machine you can also specify a custom parameter. This parameter will be consumed by the associated transition action and post transition action. The event parameter can be of any type and is purely transient, the machine will never hold on to it.
+
+```java
+final Machine<States, Events> updated = instance.sendEvent(Events.E23, someParameter);
+```
 
