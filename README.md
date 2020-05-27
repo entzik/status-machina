@@ -27,7 +27,14 @@ enum Events {
 }
 ```
 
-you first need to define your transitions, then use the composable API to define the machine:
+you first need to define your transitions, then use the composable API to define the machine.
+
+To define the machine you must define the initial state, one or more final states, all the other states in between. You also need to specify all the events and of course, the trsnsitions you have defined above. In total 8 lines of composable API.
+
+There are some rules though. Building the machine definition will fail if
+1. if any of the state without a transition being defined out of it (except for the final states)
+2. if transitions are defined out of a final state
+
 
 ```java
 import io.statusmachina.core.api.MachineDefinition;
@@ -134,7 +141,7 @@ final Transition<States, Events> t3 = stp(States.S3, States.S4, context -> "some
 ```
 
 
-### Creating a state machine and interracting with it
+### Instantiating a State Machine
 
 Once the state machine is defined you can create an instance and start interacting with it.
 
@@ -148,4 +155,5 @@ The context is the initial data you inject in the machine. The context can be re
 final Machine<States, Events> instance = new MachineInstanceImpl<>(def, machinePersistenceCallback, new HashMap<>()).start();
 ```
 
+Keep in mind you need to explicitely start the state machine after instantiating it.
 
