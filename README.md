@@ -174,3 +174,5 @@ When sending an event to the machine you can also specify a custom parameter. Th
 final Machine<States, Events> updated = instance.sendEvent(Events.E23, someParameter);
 ```
 
+Pro tip: whenever a machine transition to a new state, whether following the delivery of an event or through STP, as soon as it gets into the new state all STP transitions out of that state will be evaluated and possibly triggered. The machine will so transition from state to state until there are no more STP transitions defined out of the current state or none of the guard predicates evaluate.
+
