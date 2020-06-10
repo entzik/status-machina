@@ -24,6 +24,8 @@ public class StatusMachinaProperties {
     private int transactionIsolation = TransactionDefinition.ISOLATION_SERIALIZABLE;
     private int transactionPropagation = TransactionDefinition.PROPAGATION_REQUIRES_NEW;
 
+    private TransactionRetry transactionRetry = new TransactionRetry();
+
     public int getTransactionIsolation() {
         return transactionIsolation;
     }
@@ -38,5 +40,13 @@ public class StatusMachinaProperties {
 
     public void setTransactionPropagation(int transactionPropagation) {
         this.transactionPropagation = transactionPropagation;
+    }
+
+    public TransactionRetry getTransactionRetry() {
+        return transactionRetry;
+    }
+
+    public void setTransactionRetry(TransactionRetry transactionRetry) {
+        this.transactionRetry = transactionRetry;
     }
 }

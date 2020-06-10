@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -37,6 +38,9 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
+
+import static io.statusmachina.spring.jpa.configuration.RetryTemplateConfiguration.RETRY_TEMPLATE_TRANSACTION_RETRY;
+import static io.statusmachina.spring.jpa.configuration.TransactionTemplateCnfiguration.STATUS_MACHINA_TRANSACTION_TEMPLATE;
 
 @Service
 public class SpringJpaStateMachineService<S, E> implements StateMachineService<S, E>{
@@ -54,8 +58,12 @@ public class SpringJpaStateMachineService<S, E> implements StateMachineService<S
     private ApplicationContext context;
 
     @Autowired
-    @Qualifier(TransactionTemplateCnfiguration.STATUS_MACHINA_TRANSACTION_TEMPLATE)
+    @Qualifier(STATUS_MACHINA_TRANSACTION_TEMPLATE)
     private TransactionTemplate transactionTemplate;
+
+    @Autowired
+    @Qualifier(RETRY_TEMPLATE_TRANSACTION_RETRY)
+    private RetryTemplate retryTemplate;
 
     MachinePersistenceCallback<S, E> machinePersistenceCallback;
 
@@ -65,7 +73,7 @@ public class SpringJpaStateMachineService<S, E> implements StateMachineService<S
     @PostConstruct
     public void postConstruct() {
         LOGGER.debug("constructing fine grained persistence callback");
-        machinePersistenceCallback = new FineGrainedMachinePersistenceCallback<>(context.getBean(SpringJpaStateMachineService.class), transactionTemplate);
+        machinePersistenceCallback = new FineGrainedMachinePersistenceCallback<>(context.getBean(SpringJpaStateMachineService.class), transactionTemplate, retryTemplate);
     }
 
     @Override
@@ -197,10 +205,12 @@ public class SpringJpaStateMachineService<S, E> implements StateMachineService<S
     private static class FineGrainedMachinePersistenceCallback<S, E> implements MachinePersistenceCallback<S, E> {
         private SpringJpaStateMachineService stateMachineService;
         private TransactionTemplate transactionTemplate;
+        private RetryTemplate transactionRetryTemplate;
 
-        public FineGrainedMachinePersistenceCallback(SpringJpaStateMachineService stateMachineService, TransactionTemplate transactionTemplate) {
+        public FineGrainedMachinePersistenceCallback(SpringJpaStateMachineService stateMachineService, TransactionTemplate transactionTemplate, RetryTemplate transactionRetryTemplate) {
             this.stateMachineService = stateMachineService;
             this.transactionTemplate = transactionTemplate;
+            this.transactionRetryTemplate = transactionRetryTemplate;
         }
 
         @Override
@@ -217,13 +227,13 @@ public class SpringJpaStateMachineService<S, E> implements StateMachineService<S
 
         @Override
         public <R> R runInTransaction(Callable<R> callable) throws Exception {
-            return transactionTemplate.execute(status -> {
+            return transactionRetryTemplate.execute(context -> transactionTemplate.execute(status -> {
                 try {
                     return callable.call();
                 } catch (Exception e) {
                     throw new IllegalStateException(e);
                 }
-            });
+            }));
         }
     }
 }

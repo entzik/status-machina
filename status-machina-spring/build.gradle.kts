@@ -35,6 +35,7 @@ dependencies {
     // implementation("com.google.guava:guava:26.0-jre")
     compileOnly("org.springframework.boot:spring-boot-starter")
     compileOnly("org.springframework.boot:spring-boot-starter-data-jpa")
+    compileOnly("org.springframework.retry:spring-retry")
     compileOnly("javax.validation:validation-api")
 
     implementation("com.google.guava:guava:28.1-jre")
@@ -45,6 +46,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-engine")
     testRuntimeOnly("org.springframework.boot:spring-boot-starter")
     testRuntimeOnly("org.springframework.boot:spring-boot-starter-data-jpa")
+    testRuntimeOnly("org.springframework.retry:spring-retry")
     testRuntimeOnly("javax.validation:validation-api")
     testRuntimeOnly("com.h2database:h2")
     testImplementation("org.assertj:assertj-core:3.4.1")
