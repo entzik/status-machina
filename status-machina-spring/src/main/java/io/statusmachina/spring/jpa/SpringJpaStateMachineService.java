@@ -215,14 +215,18 @@ public class SpringJpaStateMachineService<S, E> implements StateMachineService<S
 
         @Override
         public Machine<S, E> saveNew(Machine<S, E> machine) {
-            stateMachineService.create(machine);
-            return machine;
+            return transactionRetryTemplate.execute(context -> {
+                stateMachineService.create(machine);
+                return machine;
+            });
         }
 
         @Override
         public Machine<S, E> update(Machine<S, E> machine) {
-            stateMachineService.update(machine);
-            return machine;
+            return transactionRetryTemplate.execute(context -> {
+                stateMachineService.update(machine);
+                return machine;
+            });
         }
 
         @Override
