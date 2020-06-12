@@ -30,8 +30,8 @@ import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 
 @Configuration
-public class RetryTemplateConfiguration {
-    public static final String RETRY_TEMPLATE_TRANSACTION_RETRY = "transactionRetryTemplate";
+public class StateMachineRetryTemplateConfiguration {
+    public static final String RETRY_TEMPLATE_TRANSACTION_RETRY = "stateMachineTransactionRetryTemplate";
 
     @Autowired
     StatusMachinaProperties properties;

@@ -20,7 +20,6 @@ import io.statusmachina.core.stdimpl.MachineInstanceImpl;
 import io.statusmachina.core.api.*;
 import io.statusmachina.core.spi.MachinePersistenceCallback;
 import io.statusmachina.core.spi.StateMachineService;
-import io.statusmachina.spring.jpa.configuration.TransactionTemplateCnfiguration;
 import io.statusmachina.spring.jpa.model.ExternalState;
 import io.statusmachina.spring.jpa.repo.ExternalStateRepository;
 import org.slf4j.Logger;
@@ -39,7 +38,7 @@ import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
-import static io.statusmachina.spring.jpa.configuration.RetryTemplateConfiguration.RETRY_TEMPLATE_TRANSACTION_RETRY;
+import static io.statusmachina.spring.jpa.configuration.StateMachineRetryTemplateConfiguration.RETRY_TEMPLATE_TRANSACTION_RETRY;
 import static io.statusmachina.spring.jpa.configuration.TransactionTemplateCnfiguration.STATUS_MACHINA_TRANSACTION_TEMPLATE;
 
 @Service
