@@ -9,7 +9,7 @@ It offers a core library and a spring integration library.
 The spring itegration libary persists and ensures distributed consensus on state machine transitions using a relational database and SpringDataJPA
 
 ## Usage
-Status machina can be used on its own or in the context of a Spring Boot project. One step however remains the same is both cases, and that's defining the state machine.
+StatusMachina can be used on its own or in the context of a Spring Boot project. One step however remains the same is both cases, and that's defining the state machine.
 
 ### Defining a state machine
 
@@ -29,18 +29,18 @@ enum Events {
 
 you first need to define your transitions, then use the composable API to define the machine.
 
-To define the machine you must define the initial state, one or more final states, all the other states in between. You also need to specify all the events and of course, the trsnsitions you have defined above. In total 8 lines of composable API.
+To define the machine you must define the initial state, one or more final states and also all the other states in between. Then you need to to specify all the events to which the state machine is expected to react, and of course, the transitions triggered by these events out of various states. In total 8 lines of composable API.
 
 There are some rules though. Building the machine definition will fail if
-1. if any of the state without a transition being defined out of it (except for the final states)
+1. a state that is not final does not have any transition being defined out of it
 2. if transitions are defined out of a final state
 
+The code snippet bellow shows how to create a state machine definition:
 
 ```java
 import io.statusmachina.core.api.MachineDefinition;
 import io.statusmachina.core.api.Transition;
 import io.statusmachina.core.stdimpl.EnumBasedMachineDefinitionBuilderProvider;
-import org.junit.jupiter.api.Test;
 
 import static io.statusmachina.core.api.Transition.*;
 
@@ -62,7 +62,7 @@ final MachineDefinition<States, Events> def = new EnumBasedMachineDefinitionBuil
 
 ### Transitions
 
-A transition takes the machine from a state to another. You probably already noticed by looking at the code that they can be of two kinds: event transitions and STP transitions.
+A transition takes the machine from a state to another. You probably already noticed by looking at the code snippet above that transitions can be of two kinds: event triggered and STP.
 
 Event transitions are triggerd when an appropriate event is delivered to the machine. If a machine is in a state and a transition is configured our of that state for a specific event, then when that event is delivered, the machine will immediately transition to the target state of the transition.
 
@@ -90,7 +90,7 @@ You notice the context is an immutable map, so if you need to modify it you need
 
 It is also possible to configure a post transition action. The post transition action, if one is specified, is only invoked after the transition has completed and the machine has durably reached the target state.
 
-If the post transition action fails, the machine will not reach the target state, enter an error state with sufficient metadata to describe the error condition and context.
+If the post transition action fails, the machine will enter an error state with sufficient metadata to describe the error condition and context.
 
 A post transition action is not allowed to mutate the machine's context, it can only consume it.
 
@@ -109,7 +109,7 @@ Post transition actions are typically used to implement notifications related to
 
 Sometimes we may need to pass information between actions and post actions. This can of course be done through the context - because the post transition action will receive the context mutated by the action, but if the information is not needed later in the process it will just polute the context.
 
-If such transitent data needs to be passed from an action to the subsequent post action, the stashing mechanism can be used. This will allow an action to stash any object which can then be retrieved (un-stashed) by the post action, like in the example bellow:
+If such transitent data needs to be passed from an action to the subsequent post action, the stashing mechanism can be used. This will allow an action to stash any kind of object which can then be retrieved (un-stashed) by the post action, like in the example bellow:
 
 ```java
 class SomeTransitionAction implement TransitionAction {
@@ -130,7 +130,7 @@ static class SomePostTransitionAction<P> implements TransitionPostAction<P> {
 }
 ```
 
-Please remember the stash only exists during the lifecycle of the transition where it was defined.
+Please remember the stash only exists during the lifecycle of the transition where it was defined. Once the transition completes, it will be discarded.
 
 #### Transition Guards
 
@@ -140,6 +140,8 @@ Transitions can be guarded. A Guard is a predicate that consumes the machine's c
 final Transition<States, Events> t3 = stp(States.S3, States.S4, context -> "some-value".equals(context.get("context-key")));
 ```
 
+It is best to think abbout a guard as a pre-condition of the transition.
+
 
 ### Instantiating a State Machine
 
@@ -147,16 +149,16 @@ Once the state machine is defined you can create an instance and start interacti
 
 To instantiate a state machine you need to provide a definition, a set of callbacks that will help you manage the machine's lifecycle and the initial context.
 
-The callbacks will allow you to react when a machine needs to be saved to persistent storage.
+The callbacks will allow you to react when a machine needs to be saved to persistent storage. You should not have to implement these specializations by yourself, unless you are writing an integration layer. Specializations of the state machine, such as the spring boot integration, are expected to provide implementations of these callbacks.
 
-The context is the initial data you inject in the machine. The context can be read and moified by transition actions.
+The context is the initial data you inject in the machine. The context can be read by transition guards, transition actions and post transition actions and it can be modified by transition actions.
 
 ```java
 final Machine<States, Events> instance = new MachineInstanceImpl<>(def, machinePersistenceCallback, new HashMap<>())
                                             .start();
 ```
 
-Keep in mind you need to explicitely start the state machine after instantiating it. If you have STP transitions out of the initial state, starting the machine will evaluate the guard predicated on each STP transition and fire the first one that matches. 
+Keep in mind you need to explicitely start the state machine after instantiating it. If you have STP transitions out of the initial state, starting the machine will evaluate evaluated each STP transition's guard and fire the first one that matches. 
 
 Pro tip: in order for your machine to be deterministic, you need to make sure guarding conditions on your transitions defined out of the same state are mutually exclusive.
 
@@ -166,7 +168,7 @@ Interacting with a state machine is as easy as sending an event to it:
 final Machine<States, Events> updated = instance.sendEvent(Events.E23);
 ```
 
-Remember the state machine is an immutable data structure. Any atempt to mutate its internal state will create a new version of the machine. Once you sent the event, the reference to the old version of the machine, the one you sent your event to, must be discarded.
+The state machine is an immutable data structure. Any atempt to mutate its internal state will create a new version of the machine. As such, sending an event to a machine instance will create a new instance that will reflect the new state. 
 
 When sending an event to the machine you can also specify a custom parameter. This parameter will be consumed by the associated transition action and post transition action. The event parameter can be of any type and is purely transient, the machine will never hold on to it.
 
@@ -176,3 +178,6 @@ final Machine<States, Events> updated = instance.sendEvent(Events.E23, someParam
 
 Pro tip: whenever a machine transition to a new state, whether following the delivery of an event or through STP, as soon as it gets into the new state all STP transitions out of that state will be evaluated and possibly triggered. The machine will so transition from state to state until there are no more STP transitions defined out of the current state or none of the guard predicates evaluate.
 
+# SpringBoot Integration
+
+__TODO__
