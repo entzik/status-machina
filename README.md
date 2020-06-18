@@ -188,15 +188,13 @@ The recomended way to set up the database is using Liquibase change sets, but of
 The code snippet bellow shows a Liquibase change set for create the required database table.
 
 ```xml
-    <changeSet id="3" author="Emil Kirschner">
+    <changeSet id="3" author="YouName">
         <createTable tableName="sm_context_entries">
             <column name="machine_id" type="varchar(40)"></column>
             <column name="name" type="varchar(255)"></column>
             <column name="value" type="varchar(255)"></column>
         </createTable>
-        <addPrimaryKey columnNames="machine_id, name"
-                       constraintName="pk_sm_context_entries"
-                       tableName="sm_context_entries" />
+        <addPrimaryKey columnNames="machine_id, name" constraintName="pk_sm_context_entries" tableName="sm_context_entries" />
 
         <createTable tableName="sm_states">
             <column name="id" type="varchar(40)">
