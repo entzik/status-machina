@@ -8,6 +8,11 @@ It offers a core library and a spring integration library.
 
 The spring itegration libary persists and ensures distributed consensus on state machine transitions using a relational database and SpringDataJPA
 
+## Dependencies
+
+StatusMachine is published on MavenCentral. We recomend always using the latest version of the dependencies published there:
+https://mvnrepository.com/artifact/io.statusmachina 
+
 ## Usage
 StatusMachina can be used on its own or in the context of a Spring Boot project. One step however remains the same is both cases, and that's defining the state machine.
 
