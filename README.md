@@ -261,7 +261,9 @@ public class TestOneStateMachineConfiguration {
 }
 ```
 
-Now all you have to do is autowire the machine definition and use the companion spring service to instantiate and persist the machine instance in its initial state (or any state STP transition may have taken it from there).
+## Instantiating and using a state machine in Spring Boot
+
+Now that you have your state machine definition, all you have to do is autowire it and use the companion spring service to instantiate and persist the machine instance in its initial state (or any state STP transition may have taken it from there).
 
 The code snippet bellow shows how easy it is to interact with the machine in SpringBoot:
 
@@ -276,8 +278,11 @@ The code snippet bellow shows how easy it is to interact with the machine in Spr
     StateMachineService<TestOneStateMachineConfiguration.States, TestOneStateMachineConfiguration.Events> service;
 
     public void someService() {
+        // instantiate and start a new machine using the provided definition
         final Machine machine = service.newMachine(def, new HashMap<>()).start();
+        // you can get the machine ID for future reference
         final String machineId = machine.getId();
+        // you can send an event to the machine. the machine will persist itself to the database.
         machine.sendEvent(Events.E23);    
     }
 
@@ -286,8 +291,43 @@ The code snippet bellow shows how easy it is to interact with the machine in Spr
 As you notice, you don't have to care about persistence. The state machine instance configured by the ```StateMachineService``` will automatically persist itself each time the state changes.
 
 
-The ```StateMachineService``` offers a set of useful functionalities that help manage a fleet of state machine instances. You can:
+The ```StateMachineService``` offers a set of useful functionalities that help manage a fleet of state machine instances. You can use these functions to provide operational monitoring and remediation actions in your application. You can:
 
 - find all machines that have terminated
 - find all machines that are in an error state, and get details about those errors
 - find all machines that are stalled, that is, they are not in a terminal state and have not received an event in a specified amoutn of time.
+- take a machine out of error state and have it resume its function.
+
+The code snippet bellow shows typical usage examples of this functionality.
+
+```java
+    // you can read a state machine from the database
+    final Machine<States, Events> instance = service.read(def, machineId);   
+    
+    // you can find all terminated machines
+    final List<MachineSnapshot> terminated = service.findTerminated();
+    
+    
+    // you can find stale machines. a machine is stale if it hasn't received an event in a specified number of seconds
+    final List<MachineSnapshot> stale = service.findStale(1);
+    
+    // you can find machines in failed state
+    final List<MachineSnapshot> failed = service.findFailed();
+    
+    // you can get detailed information about the failure the machine suffered:
+    instance.getErrorType(); // get the error type
+    instance.getError(); // get the error message, if any
+```
+
+## Transactional Considerations
+
+The state machine Spring Boot integration implements its own transaction boundary policies. You need to be aware of this behavior when integrating Status Machina in your project.
+
+- When a machine is instantiated, it is imediately persisted in its initial state. The persistence code is wrapped in a transaction template.
+- Each time the machine transitions to a new state, the transition logic and the transition action are executed as part of the same transaction. If the transiton action fails with an exception, the transaction will roll back and the state change will not happen. If the state machine itself fails to persist, the transaction will also be rolled back, the machine will not change states and whatever database operation the action has performed during the transition transaction, will of course be rolled back as well.
+
+The transaction propagation policy used by the Spring Boot integration defaults to ```PROPAGATION_REQUIRED_NEW```. This works well for the projects StatusMachina was initialy developed to serve, but you can change it to ```PROPAGATION_REQUIRED``` if that works better for you.
+
+To change the transaction propagation mode you must set the ```statusmachina.spring.transactionPropagation``` property to the desired value. This is expected to be a numeric value, as defined in the ```org.springframework.transaction.TransactionDefinition``` interface.
+
+The transaction isolation level defaults to ```ISOLATION_DEFAULT```. You can change it using the ```statusmachina.spring.transactionIsolation``` property using numeric values defined in the ```org.springframework.transaction.TransactionDefinition``` interface, but I strongly recommend you only do that only if you know very well what your doing.
