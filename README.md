@@ -180,4 +180,114 @@ Pro tip: whenever a machine transition to a new state, whether following the del
 
 # SpringBoot Integration
 
-__TODO__
+The StatusMachina SpringBoot integration defines its own spring boot starter. It persists a state machine data in the current Spring Boot data source and provides a companion spring service for convenience. Apart from making sure the state machine tables and indexes are defines in the database pointed at by the data source, there is nothing much to do.
+
+## Setting up the database
+
+The recomended way to set up the database is using Liquibase change sets, but of course that is ultimately up to you. 
+The code snippet bellow shows a Liquibase change set for create the required database table.
+
+```xml
+    <changeSet id="3" author="Emil Kirschner">
+        <createTable tableName="sm_context_entries">
+            <column name="machine_id" type="varchar(40)"></column>
+            <column name="name" type="varchar(255)"></column>
+            <column name="value" type="varchar(255)"></column>
+        </createTable>
+        <addPrimaryKey columnNames="machine_id, name"
+                       constraintName="pk_sm_context_entries"
+                       tableName="sm_context_entries" />
+
+        <createTable tableName="sm_states">
+            <column name="id" type="varchar(40)">
+                <constraints primaryKey="true" primaryKeyName="statemachine_pk" nullable="false"/>
+            </column>
+            <column name="version" type="bigint"></column>
+            <column name="crt_state" type="varchar(255)"></column>
+            <column name="done" type="boolean"></column>
+            <column name="error" type="varchar(255)"></column>
+            <column name="last_modified" type="bigint"></column>
+            <column name="locked" type="boolean"></column>
+            <column name="typename" type="varchar(255)"></column>
+        </createTable>
+    </changeSet>
+```
+
+## Defining a state machine in Spring Boot
+
+You can define an enum based state machine in Spring Boot almost the same way we've seen it above, but since this is Spring you may want to expose the definition as a Spring Bean using a Spring Configuration.
+
+You need to autowire a ```MachineDefinitionBuilderProvider``` instance which will give you a ready to use ```MachineDefinitionBuilder``` instance.
+
+It is good practice to name your ```MachineDefinitionBuilder``` beans in order to avoid conflicts of you define more than one state machine.
+
+```java
+...
+
+@Configuration
+public class TestOneStateMachineConfiguration {
+
+    ...
+    
+    public enum States {
+        S1, S2, S3, S4, S5
+    }
+
+    public enum Events {
+        E23, E34, E35
+    }
+
+    ...
+    
+    final Transition<States, Events> t1 = stp(States.S1, States.S2);
+    final Transition<States, Events> t2 = event(States.S2, States.S3, Events.E23);
+    final Transition<States, Events> t3 = event(States.S3, States.S4, Events.E34);
+    final Transition<States, Events> t4 = event(States.S3, States.S5, Events.E35);
+
+    @Autowired
+    MachineDefinitionBuilderProvider<States, Events> builderProvider;
+
+    @Bean("MyMachineDef")
+    public MachineDefinition<States, Events> getMachineDefinition() {
+        return builderProvider.getMachineDefinitionBuilder(States.class, Events.class)
+                .name("myMachine")
+                .states(States.values())
+                .initialState(States.S1)
+                .terminalStates(States.S4, States.S5)
+                .events(Events.values())
+                .transitions(t1, t2, t3, t4)
+                .build();
+    }
+}
+```
+
+Now all you have to do is autowire the machine definition and use the companion spring service to instantiate and persist the machine instance in its initial state (or any state STP transition may have taken it from there).
+
+The code snippet bellow shows how easy it is to interact with the machine in SpringBoot:
+
+```java
+    ...
+    
+    @Autowired
+    @Qualifier("MyMachineDef") // autowire the machine definition using the qualifier to avoid conflicts
+    MachineDefinition<States, Events> def;
+
+    @Autowired // autowire the state machine companion service
+    StateMachineService<TestOneStateMachineConfiguration.States, TestOneStateMachineConfiguration.Events> service;
+
+    public void someService() {
+        final Machine machine = service.newMachine(def, new HashMap<>()).start();
+        final String machineId = machine.getId();
+        machine.sendEvent(Events.E23);    
+    }
+
+```
+
+As you notice, you don't have to care about persistence. The state machine instance configured by the ```StateMachineService``` will automatically persist itself each time the state changes.
+
+
+The ```StateMachineService``` offers a set of useful functionalities that help manage a fleet of state machine instances. You can:
+
+- find all machines that have terminated
+- find all machines that are in an error state, and get details about those errors
+- find all machines that are stalled, that is, they are not in a terminal state and have not received an event in a specified amoutn of time.
