@@ -328,4 +328,4 @@ The transaction propagation policy used by the Spring Boot integration defaults 
 
 To change the transaction propagation mode you must set the ```statusmachina.spring.transactionPropagation``` property to the desired value. This is expected to be a numeric value, as defined in the ```org.springframework.transaction.TransactionDefinition``` interface.
 
-The transaction isolation level defaults to ```ISOLATION_DEFAULT```. You can change it using the ```statusmachina.spring.transactionIsolation``` property using numeric values defined in the ```org.springframework.transaction.TransactionDefinition``` interface, but I strongly recommend you only do that only if you know very well what your doing.
+The transaction isolation level defaults to ```ISOLATION_DEFAULT```. You can change it using the ```statusmachina.spring.transactionIsolation``` property using numeric values defined in the ```org.springframework.transaction.TransactionDefinition``` interface, but I strongly recommend you only do that if you know very well what your doing.
