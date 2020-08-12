@@ -1,12 +1,14 @@
 # Status Machina
 
-__WORK IN PROGRESS__
-
 A small, simple and pragmatic state machine engine targeted at resilient micro-services orchestration.
 
 It offers a core library and a spring integration library.
 
 The spring itegration libary persists and ensures distributed consensus on state machine transitions using a relational database and SpringDataJPA
+
+# Users
+
+Status Machina is used in production at LiquidShare. LiquidShare is a sponsor of the project, having contributed some of the development time.
 
 ## Dependencies
 
