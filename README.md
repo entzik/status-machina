@@ -8,7 +8,7 @@ The spring itegration libary persists and ensures distributed consensus on state
 
 ## Users
 
-Status Machina is used in production at [LiquidShare]:https://www.liquidshare.io/ to orchestrate microservice sagas implementation. LiquidShare is a sponsor of the project, having contributed some of the development time.
+Status Machina is used in production at [LiquidShare]: https://www.liquidshare.io/ to orchestrate microservice sagas implementation. LiquidShare is a sponsor of the project, having contributed some of the development time.
 
 ## Dependencies
 
