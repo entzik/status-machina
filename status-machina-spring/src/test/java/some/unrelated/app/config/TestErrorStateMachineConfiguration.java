@@ -16,10 +16,7 @@
 package some.unrelated.app.config;
 
 import com.google.common.collect.ImmutableMap;
-import io.statusmachina.core.api.MachineDefinition;
-import io.statusmachina.core.api.MachineDefinitionBuilderProvider;
-import io.statusmachina.core.api.Transition;
-import io.statusmachina.core.api.TransitionAction;
+import io.statusmachina.core.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -40,14 +37,32 @@ public class TestErrorStateMachineConfiguration {
     }
 
 
-    final Transition<States, Events> t1 = stp(States.S1, States.S2, (TransitionAction<String>) (context, parameter) -> context);
-    final Transition<States, Events> t21 = stp(States.S2, States.S3, (TransitionAction<String>) (context, parameter) -> {
-        throw new IllegalStateException("whatever");
+    final Transition<States, Events> t1 = stp(States.S1, States.S2, new TransitionActionBase<String>() {
+        @Override
+        public ImmutableMap<String, String> apply(ImmutableMap<String, String> context, String parameter) {
+            return context;
+        }
     });
-    final Transition<States, Events> t22 = stp(States.S2, States.S3, (TransitionAction<String>) (context, parameter) -> context, (immutableMap, o) -> {
+    final Transition<States, Events> t21 = stp(States.S2, States.S3, new TransitionActionBase<String>() {
+        @Override
+        public ImmutableMap<String, String> apply(ImmutableMap<String, String> context, String parameter) {
+            throw new IllegalStateException("whatever");
+        }
+    });
+    final Transition<States, Events> t22 = stp(States.S2, States.S3, new TransitionActionBase<String>() {
+        @Override
+        public ImmutableMap<String, String> apply(ImmutableMap<String, String> context, String parameter) {
+            return context;
+        }
+    }, (immutableMap, o) -> {
         throw new IllegalStateException("post whatever");
     });
-    final Transition<States, Events> t3 = stp(States.S3, States.S4, (TransitionAction<String>) (context, parameter) -> context);
+    final Transition<States, Events> t3 = stp(States.S3, States.S4, new TransitionActionBase<String>() {
+        @Override
+        public ImmutableMap<String, String> apply(ImmutableMap<String, String> context, String parameter) {
+            return context;
+        }
+    });
 
 
     @Autowired

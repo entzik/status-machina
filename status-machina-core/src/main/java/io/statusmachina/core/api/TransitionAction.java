@@ -32,7 +32,7 @@ import java.util.function.BiFunction;
  * @param <P> the type of the event parameter
  */
 public interface TransitionAction<P> extends BiFunction<ImmutableMap<String,String>, P, ImmutableMap<String,String>> {
-    HashMap<String, Object> stashStore = new HashMap<>();
+//    HashMap<String, Object> stashStore = new HashMap<>();
 
     @Override
     ImmutableMap<String, String> apply(ImmutableMap<String, String> context, P parameter);
@@ -43,14 +43,11 @@ public interface TransitionAction<P> extends BiFunction<ImmutableMap<String,Stri
      * @param s the object
      * @param <S> the tpe of the object to be stored in the stash
      */
-    default <S> void stash(String key, S s) {
-        stashStore.put(key, s);
-    }
+    <S> void stash(String key, S s);
+
 
     /**
      * @return the stash store
      */
-    default ImmutableMap<String, Object> getStashStore() {
-        return ImmutableMap.<String, Object>builder().putAll(stashStore).build();
-    }
+    ImmutableMap<String, Object> getStashStore();
 }

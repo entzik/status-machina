@@ -114,7 +114,7 @@ public class GuardedStpTransitionTest {
         E23, E34, E35
     }
 
-    static class SpyAction<P> implements TransitionAction<P> {
+    static class SpyAction<P> extends TransitionActionBase<P> {
         private boolean beenThere = false;
         private ImmutableMap<String, String> context;
         private P p;

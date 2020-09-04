@@ -16,10 +16,7 @@
 package some.unrelated.app.config;
 
 import com.google.common.collect.ImmutableMap;
-import io.statusmachina.core.api.Transition;
-import io.statusmachina.core.api.MachineDefinition;
-import io.statusmachina.core.api.MachineDefinitionBuilderProvider;
-import io.statusmachina.core.api.TransitionAction;
+import io.statusmachina.core.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -31,7 +28,7 @@ import static io.statusmachina.core.api.Transition.stp;
 
 @Configuration
 public class TestOneStateMachineConfiguration {
-    static class SpyAction<P> implements TransitionAction<P> {
+    static class SpyAction<P> extends TransitionActionBase<P> {
         private boolean beenThere = false;
         private ImmutableMap<String, String> context;
         private P p;
