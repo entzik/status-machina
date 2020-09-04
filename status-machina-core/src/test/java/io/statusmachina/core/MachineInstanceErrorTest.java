@@ -31,14 +31,15 @@ import java.util.concurrent.Callable;
 import static io.statusmachina.core.api.Transition.event;
 import static io.statusmachina.core.api.Transition.stp;
 import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 
-public class MachineInstanceTest {
+public class MachineInstanceErrorTest {
     final SpyAction a1 = new SpyAction() {
         @Override
         public ImmutableMap<String, String> apply(ImmutableMap context, Object o) {
             stash("toto", "titi");
-            return super.apply(context, o);
+            throw new IllegalStateException("some action error");
         }
     };
     final SpyPostAction a1Post = new SpyPostAction();
@@ -76,7 +77,8 @@ public class MachineInstanceTest {
             .terminalStates(States.S4, States.S5)
             .events(Events.values())
             .transitions(t1, t2, t3, t4)
-            .errorHandler(statesEventsErrorData -> {})
+            .errorHandler(statesEventsErrorData -> {
+            })
             .build();
 
     @BeforeEach
@@ -90,97 +92,35 @@ public class MachineInstanceTest {
     }
 
     @Test
-    void testInstantiationAndStp() {
+    void testStateMachineInErrorFollowingTransitionActionfailure() {
+        Machine<States, Events> instance = null;
         try {
-            final Machine<States, Events> instance = new MachineInstanceImpl<>(def, machinePersistenceCallback, new HashMap<>()).start();
+            instance = new MachineInstanceImpl<>(def, machinePersistenceCallback, new HashMap<>());
+            instance = instance.start();
             assertThat(instance.getId()).isNotEmpty();
-            assertThat(instance.getCurrentState()).isEqualTo(States.S2).as("after creation machine has moved from state S1 to state S2 using STP transition t1");
-            assertThat(a1.hasBeenThere()).isTrue();
-            assertThat(a1Post.hasBeenThere()).isTrue();
-            assertThat(a1Post.getStashed()).isEqualTo("titi");
+            assertThat(instance.isErrorState()).isTrue();
+            assertThat(instance.getError()).isNotEmpty().contains("some action error");
         } catch (Exception e) {
-            fail("machine was not instantiated", e);
+            fail("", e);
         }
     }
 
     @Test
-    void testEventTransition1() {
+    void testSendEventToMachineInErrorState() {
+        Machine<States, Events> instance = null;
         try {
-            final Machine<States, Events> instance = new MachineInstanceImpl<>(def, machinePersistenceCallback, new HashMap<>()).start();
-            final Machine<States, Events> updated = instance.sendEvent(Events.E23);
-            assertThat(updated.getCurrentState()).isEqualTo(States.S3).as("after creation machine has moved from state S2 to state S3 using event transition t2");
-            assertThat(a1.hasBeenThere()).isTrue();
-            assertThat(a2.hasBeenThere()).isTrue();
-        } catch (Exception e) {
-            fail("machine was not instantiated", e);
-        }
-    }
-
-    @Test
-    void testEventTransition2() {
-        try {
-            final Machine<States, Events> instance = new MachineInstanceImpl<>(def, machinePersistenceCallback, new HashMap<>()).start();
-            final Machine<States, Events> updated1 = instance.sendEvent(Events.E23);
-            final Machine<States, Events> updated2 = updated1.sendEvent(Events.E34);
-            assertThat(updated2.getCurrentState()).isEqualTo(States.S4).as("after creation machine has moved from state S3 to state S4 using event transition t3");
-            assertThat(a1.hasBeenThere()).isTrue();
-            assertThat(a1Post.hasBeenThere()).isTrue();
-            assertThat(a2.hasBeenThere()).isTrue();
-            assertThat(a3.hasBeenThere()).isTrue();
-            assertThat(a3Post.hasBeenThere()).isTrue();
-            assertThat(a4.hasBeenThere()).isFalse();
-        } catch (Exception e) {
-            fail("machine was not instantiated", e);
-        }
-    }
-
-    @Test
-    void testEventTransition3() {
-        try {
-            final Machine<States, Events> instance = new MachineInstanceImpl<States, Events>(def, machinePersistenceCallback, new HashMap<>()).start();
-            final Machine<States, Events> updated1 = instance.sendEvent(Events.E23);
-            final Machine<States, Events> updated2 = updated1.sendEvent(Events.E35);
-            assertThat(updated2.getCurrentState()).isEqualTo(States.S5).as("after creation machine has moved from state S3 to state S5 using event transition t4");
-            assertThat(a1.hasBeenThere()).isTrue();
-            assertThat(a1Post.hasBeenThere()).isTrue();
-            assertThat(a2.hasBeenThere()).isTrue();
-            assertThat(a3.hasBeenThere()).isFalse();
-            assertThat(a3Post.hasBeenThere()).isFalse();
-            assertThat(a4.hasBeenThere()).isTrue();
-        } catch (Exception e) {
-            fail("machine was not instantiated", e);
-        }
-    }
-
-    @Test
-    void testErrorWhenEventReceivedInTerminalState() {
-        try {
-            final Machine<States, Events> instance = new MachineInstanceImpl<States, Events>(def, machinePersistenceCallback, new HashMap<>()).start();
-            final Machine<States, Events> updated1 = instance.sendEvent(Events.E23);
-            final Machine<States, Events> updated2 = updated1.sendEvent(Events.E35);
-
-            assertThatThrownBy(() -> updated2.sendEvent(Events.E23))
+            instance = new MachineInstanceImpl<>(def, machinePersistenceCallback, new HashMap<>());
+            instance = instance.start();
+            Machine<States, Events> crt = instance;
+            assertThatThrownBy(() -> crt.sendEvent(Events.E23))
                     .isInstanceOf(IllegalStateException.class)
-                    .hasMessage("java.lang.IllegalStateException: state machine of type " + def.getName() + " with ID " + updated2.getId() + " event " + Events.E23.toString() + " has received an event while in ternminal state " + States.S5 + ". Aborting.");
+                    .hasMessage("a state machine cannot accept event when in error state:  type " + def.getName()+", id " + crt.getId() + "  error some action error");
+
         } catch (Exception e) {
-            fail("machine was not instantiated", e);
+            fail("", e);
         }
     }
 
-    @Test
-    void testErrorWhenEventReceivedInTerminalState2() {
-        try {
-            final Machine<States, Events> instance = new MachineInstanceImpl<States, Events>(def, machinePersistenceCallback, new HashMap<>()).start();
-            final Machine<States, Events> updated1 = instance.sendEvent(Events.E23);
-            final Machine<States, Events> updated2 = updated1.sendEvent(Events.E35);
-
-            assertThatThrownBy(() -> updated2.sendEvent(Events.E23, "xyz"))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessage("java.lang.IllegalStateException: state machine of type " + def.getName() + " with ID " + updated2.getId() + " event " + Events.E23.toString() + " has received an event while in ternminal state " + States.S5 + ". Aborting.");
-        } catch (Exception e) {
-            fail("machine was not instantiated", e);
-        }
-    }
 
     enum States {
         S1, S2, S3, S4, S5

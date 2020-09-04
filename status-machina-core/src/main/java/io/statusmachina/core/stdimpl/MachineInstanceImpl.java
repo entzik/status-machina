@@ -164,7 +164,10 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
     public Machine<S, E> sendEvent(E event) throws TransitionException {
         if (LOGGER.isDebugEnabled())
             LOGGER.debug("state machine instance of type {}, with ID {} receives event {}", def.getName(), id, def.getEventToString().apply(event));
-        if (isErrorState()) {
+        if (def.getTerminalStates().contains(currentState)) {
+            LOGGER.debug("state machine instance of type {}, with ID {} receives event {} while in terminal state {}. Aborting.", def.getName(), id, def.getEventToString().apply(event),  currentState);
+            throw new IllegalStateException(new IllegalStateException("state machine of type " + def.getName() + " with ID " + id + " event " + event.toString() + " has received an event while in ternminal state " + currentState + ". Aborting."));
+        } else if (isErrorState()) {
             LOGGER.error("a state machine cannot accept event when in error state:  type {}, id {}, error '{}'", def.getName(), id, error.get());
             throw new IllegalStateException("a state machine cannot accept event when in error state:  type " + def.getName() + ", id " + id + "  error " + error.get());
         } else {
@@ -186,16 +189,24 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
     public <P> Machine<S, E> sendEvent(E event, P param) throws TransitionException {
         if (LOGGER.isDebugEnabled())
             LOGGER.debug("state machine instance of type {}, with ID {} receives event {} with parameter {}", def.getName(), id, def.getEventToString().apply(event), param.toString());
-        final Transition<S, E> transition = def.findEventTransion(currentState, event).orElseThrow(() -> new IllegalStateException("for machines of type " + def.getName() + " event " + event.toString() + " does not trigger any transition out of state " + currentState.toString()));
-        if (LOGGER.isDebugEnabled())
-            LOGGER.debug("a transition was found for machine instance of type {}, with ID {} from state {} to state {} on event {}",
-                    def.getName(),
-                    id,
-                    def.getEventToString().apply(event),
-                    def.getStateToString().apply(currentState),
-                    def.getStateToString().apply(transition.getTo())
-            );
-        return applyTransition(transition, param);
+        if (def.getTerminalStates().contains(currentState)) {
+            LOGGER.debug("state machine instance of type {}, with ID {} receives event {} while in terminal state {}. Aborting.", def.getName(), id, def.getEventToString().apply(event),  currentState);
+            throw new IllegalStateException(new IllegalStateException("state machine of type " + def.getName() + " with ID " + id + " event " + event.toString() + " has received an event while in ternminal state " + currentState + ". Aborting."));
+        } else if (isErrorState()) {
+            LOGGER.error("a state machine cannot accept event when in error state:  type {}, id {}, error '{}'", def.getName(), id, error.get());
+            throw new IllegalStateException("a state machine cannot accept event when in error state:  type " + def.getName() + ", id " + id + "  error " + error.get());
+        } {
+            final Transition<S, E> transition = def.findEventTransion(currentState, event).orElseThrow(() -> new IllegalStateException("for machines of type " + def.getName() + " event " + event.toString() + " does not trigger any transition out of state " + currentState.toString()));
+            if (LOGGER.isDebugEnabled())
+                LOGGER.debug("a transition was found for machine instance of type {}, with ID {} from state {} to state {} on event {}",
+                        def.getName(),
+                        id,
+                        def.getEventToString().apply(event),
+                        def.getStateToString().apply(currentState),
+                        def.getStateToString().apply(transition.getTo())
+                );
+            return applyTransition(transition, param);
+        }
     }
 
     @Override
@@ -268,7 +279,10 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
         final Machine<S, E> machine = machineAndStash.getMachine();
 
         if (machine.isErrorState()) {
-            throw new TransitionException(machineAndStash.getMachine(), transition, ErrorType.TRANSITION, machineAndStash.getErrorCause());
+            if (LOGGER.isDebugEnabled())
+                LOGGER.debug("machine instance of type {}, with ID {} is in error state, skipping post action", def.getName(), id);
+            return machine;
+            //throw new TransitionException(machineAndStash.getMachine(), transition, ErrorType.TRANSITION, machineAndStash.getErrorCause());
         } else {
             transition.getPostAction().ifPresent(pa -> {
                 if (LOGGER.isDebugEnabled())
