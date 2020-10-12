@@ -13,7 +13,7 @@ plugins {
     `idea`
     `eclipse`
     signing
-    id("org.springframework.boot") version "2.1.6.RELEASE"
+    id("org.springframework.boot") version "2.3.0.RELEASE"
 }
 
 apply(plugin = "io.spring.dependency-management")
