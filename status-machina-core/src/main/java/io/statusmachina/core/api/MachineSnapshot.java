@@ -26,25 +26,28 @@ public class MachineSnapshot {
     final String id;
     final String crtState;
     final Map<String,String> context;
+    private final long lastModifiedEpoch;
     private ErrorType errorType;
     final String error;
 
     /**
      * construct an internal representation of the state machine
-     *  @param type the name of the {@link MachineDefinition}
-     * @param id the id of the {@link Machine}
+     * @param type the name of the {@link io.statusmachina.core.api.MachineDefinition}
+     * @param id the id of the {@link io.statusmachina.core.api.Machine}
      * @param crtState the current state
      * @param context the context
      * @param errorType
      * @param error error description, if applicable
+     * @param lastModifiedEpoch
      */
-    public MachineSnapshot(String type, String id, String crtState, Map<String, String> context, ErrorType errorType, String error) {
+    public MachineSnapshot(String type, String id, String crtState, Map<String, String> context, ErrorType errorType, String error, long lastModifiedEpoch) {
         this.type = type;
         this.id = id;
         this.crtState = crtState;
         this.context = context;
         this.errorType = errorType;
         this.error = error;
+        this.lastModifiedEpoch = lastModifiedEpoch;
     }
 
     /**
@@ -80,5 +83,13 @@ public class MachineSnapshot {
      */
     public String getError() {
         return error;
+    }
+
+    public String getCrtState() {
+        return crtState;
+    }
+
+    public long getLastModifiedEpoch() {
+        return lastModifiedEpoch;
     }
 }

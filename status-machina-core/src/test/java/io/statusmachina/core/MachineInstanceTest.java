@@ -24,7 +24,9 @@ import io.statusmachina.core.stdimpl.MachineInstanceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
@@ -46,11 +48,31 @@ public class MachineInstanceTest {
     final SpyAction a3 = new SpyAction();
     final SpyPostAction a3Post = new SpyPostAction();
     final SpyAction a4 = new SpyAction();
+    final SpyAction a5 = new SpyAction(){
+        @Override
+        public ImmutableMap<String, String> apply(ImmutableMap context, Object o) {
+            throw new IllegalStateException("exception during action");
+        }
+    };
 
-    final Transition<States, Events> t1 = stp(States.S1, States.S2, a1, a1Post);
+    final SpyPostAction a5Post = new SpyPostAction(){
+        @Override
+        public void accept(ImmutableMap immutableMap, Object o) {
+            throw new IllegalStateException("exception during post action");
+        }
+    };
+
+
+
+    final Transition<States, Events> t1 = stp(States.S1, States.S1a, a1, a1Post);
+    final Transition<States, Events> t11 = stp(States.S1a, States.S2, a1, a1Post);
     final Transition<States, Events> t2 = event(States.S2, States.S3, Events.E23, a2);
     final Transition<States, Events> t3 = event(States.S3, States.S4, Events.E34, a3, a3Post);
     final Transition<States, Events> t4 = event(States.S3, States.S5, Events.E35, a4);
+    final Transition<States, Events> t5 = event(States.S3, States.S6, Events.E36, a5, a5Post);
+    final Transition<States, Events> t6 = event(States.S3, States.S7, Events.E37, a4, a5Post);
+
+
 
     final MachinePersistenceCallback<States, Events> machinePersistenceCallback = new MachinePersistenceCallback<>() {
         @Override
@@ -59,7 +81,7 @@ public class MachineInstanceTest {
         }
 
         @Override
-        public Machine<States, Events> update(Machine<States, Events> machine) {
+        public Machine<States, Events> update(Machine<States, Events> machine, long epochMilliForUpdate) {
             return machine;
         }
 
@@ -69,14 +91,19 @@ public class MachineInstanceTest {
         }
     };
 
+    List<ErrorData> errorDataList = new ArrayList<>();
+    List<TransitionData> transitionsDataList = new ArrayList<>();
+
+
     final MachineDefinition<States, Events> def = new EnumBasedMachineDefinitionBuilderProvider().getMachineDefinitionBuilder(MachinaDefinitionTest.States.class, MachinaDefinitionTest.Events.class)
             .name("toto")
             .states(States.values())
             .initialState(States.S1)
             .terminalStates(States.S4, States.S5)
             .events(Events.values())
-            .transitions(t1, t2, t3, t4)
-            .errorHandler(statesEventsErrorData -> {})
+            .transitions(t1, t11, t2, t3, t4, t5, t6)
+            .errorHandler(statesEventsErrorData -> {errorDataList.add((ErrorData) statesEventsErrorData);})
+            .transitionHandler(transitionData -> {transitionsDataList.add((TransitionData) transitionData);})
             .build();
 
     @BeforeEach
@@ -87,6 +114,8 @@ public class MachineInstanceTest {
         a3.reset();
         a3Post.reset();
         a4.reset();
+        errorDataList.clear();
+        transitionsDataList.clear();
     }
 
     @Test
@@ -98,6 +127,13 @@ public class MachineInstanceTest {
             assertThat(a1.hasBeenThere()).isTrue();
             assertThat(a1Post.hasBeenThere()).isTrue();
             assertThat(a1Post.getStashed()).isEqualTo("titi");
+            assertThat(errorDataList).isEmpty();
+            assertThat(transitionsDataList).hasSize(1);
+            assertThat(transitionsDataList.get(0).getStateMachineId()).isEqualTo(instance.getId());
+            assertThat(transitionsDataList.get(0).getStateMachineType()).isEqualTo("toto");
+            assertThat(transitionsDataList.get(0).getFrom()).isEqualTo(States.S1a);
+            assertThat(transitionsDataList.get(0).getTo()).isEqualTo(States.S2);
+            assertThat(transitionsDataList.get(0).getLastModifiedEpoch()).isNotNull();
         } catch (Exception e) {
             fail("machine was not instantiated", e);
         }
@@ -182,12 +218,89 @@ public class MachineInstanceTest {
         }
     }
 
+    @Test
+    void testErrorDuringAction() {
+        try {
+            final Machine<States, Events> instance = new MachineInstanceImpl<States, Events>(def, machinePersistenceCallback, new HashMap<>()).start();
+            final Machine<States, Events> updated1 = instance.sendEvent(Events.E23);
+            final Machine<States, Events> updated2 = updated1.sendEvent(Events.E36);
+
+            assertThat(errorDataList).hasSize(1);
+            assertThat(errorDataList.get(0).getStateMachineId()).isEqualTo(instance.getId());
+            assertThat(errorDataList.get(0).getStateMachineType()).isEqualTo("toto");
+            assertThat(errorDataList.get(0).isPostActionError()).isEqualTo(false);
+            assertThat(errorDataList.get(0).getLastModifiedEpoch()).isNotNull();
+            assertThat(errorDataList.get(0).getFrom()).isEqualTo(States.S3);
+            assertThat(errorDataList.get(0).getTo()).isEqualTo(States.S6);
+            assertThat(errorDataList.get(0).getErrorMessage()).isEqualTo("exception during action");
+            assertThat(errorDataList.get(0).getEvent().get()).isEqualTo(Events.E36);
+
+            assertThat(transitionsDataList).hasSize(2);
+            assertThat(transitionsDataList.get(0).getStateMachineId()).isEqualTo(instance.getId());
+            assertThat(transitionsDataList.get(0).getStateMachineType()).isEqualTo("toto");
+            assertThat(transitionsDataList.get(0).getFrom()).isEqualTo(States.S1a);
+            assertThat(transitionsDataList.get(0).getTo()).isEqualTo(States.S2);
+            assertThat(transitionsDataList.get(0).getLastModifiedEpoch()).isNotNull();
+
+            assertThat(transitionsDataList.get(1).getStateMachineId()).isEqualTo(instance.getId());
+            assertThat(transitionsDataList.get(1).getStateMachineType()).isEqualTo("toto");
+            assertThat(transitionsDataList.get(1).getFrom()).isEqualTo(States.S2);
+            assertThat(transitionsDataList.get(1).getTo()).isEqualTo(States.S3);
+            assertThat(transitionsDataList.get(1).getLastModifiedEpoch()).isNotNull();
+
+        } catch (Exception e) {
+            fail("machine was not instantiated", e);
+        }
+    }
+
+    @Test
+    void testErrorDuringPostAction() {
+        try {
+            final Machine<States, Events> instance = new MachineInstanceImpl<States, Events>(def, machinePersistenceCallback, new HashMap<>()).start();
+            final Machine<States, Events> updated1 = instance.sendEvent(Events.E23);
+            assertThatThrownBy(() -> updated1.sendEvent(Events.E37))
+                    .isInstanceOf(TransitionException.class);
+
+            assertThat(errorDataList).hasSize(1);
+            assertThat(errorDataList.get(0).getStateMachineId()).isEqualTo(instance.getId());
+            assertThat(errorDataList.get(0).getStateMachineType()).isEqualTo("toto");
+            assertThat(errorDataList.get(0).isPostActionError()).isEqualTo(true);
+            assertThat(errorDataList.get(0).getLastModifiedEpoch()).isNotNull();
+            assertThat(errorDataList.get(0).getFrom()).isEqualTo(States.S3);
+            assertThat(errorDataList.get(0).getTo()).isEqualTo(States.S7);
+            assertThat(errorDataList.get(0).getErrorMessage()).isEqualTo("exception during post action");
+            assertThat(errorDataList.get(0).getEvent().get()).isEqualTo(Events.E37);
+
+            assertThat(transitionsDataList).hasSize(3);
+            assertThat(transitionsDataList.get(0).getStateMachineId()).isEqualTo(instance.getId());
+            assertThat(transitionsDataList.get(0).getStateMachineType()).isEqualTo("toto");
+            assertThat(transitionsDataList.get(0).getFrom()).isEqualTo(States.S1a);
+            assertThat(transitionsDataList.get(0).getTo()).isEqualTo(States.S2);
+            assertThat(transitionsDataList.get(0).getLastModifiedEpoch()).isNotNull();
+
+            assertThat(transitionsDataList.get(1).getStateMachineId()).isEqualTo(instance.getId());
+            assertThat(transitionsDataList.get(1).getStateMachineType()).isEqualTo("toto");
+            assertThat(transitionsDataList.get(1).getFrom()).isEqualTo(States.S2);
+            assertThat(transitionsDataList.get(1).getTo()).isEqualTo(States.S3);
+            assertThat(transitionsDataList.get(1).getLastModifiedEpoch()).isNotNull();
+
+            assertThat(transitionsDataList.get(2).getStateMachineId()).isEqualTo(instance.getId());
+            assertThat(transitionsDataList.get(2).getStateMachineType()).isEqualTo("toto");
+            assertThat(transitionsDataList.get(2).getFrom()).isEqualTo(States.S3);
+            assertThat(transitionsDataList.get(2).getTo()).isEqualTo(States.S7);
+            assertThat(transitionsDataList.get(2).getLastModifiedEpoch()).isNotNull();
+
+        } catch (Exception e) {
+            fail("machine was not instantiated", e);
+        }
+    }
+
     enum States {
-        S1, S2, S3, S4, S5
+        S1, S1a, S2, S3, S4, S5, S6, S7
     }
 
     enum Events {
-        E23, E34, E35
+        E23, E34, E35, E3, E36, E37
     }
 
     static class SpyAction<P> extends TransitionActionBase<P> {

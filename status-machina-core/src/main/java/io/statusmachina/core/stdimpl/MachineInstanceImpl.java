@@ -22,6 +22,7 @@ import io.statusmachina.core.spi.MachinePersistenceCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
 import java.util.*;
 
 public class MachineInstanceImpl<S, E> implements Machine<S, E> {
@@ -165,13 +166,13 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
         if (LOGGER.isDebugEnabled())
             LOGGER.debug("state machine instance of type {}, with ID {} receives event {}", def.getName(), id, def.getEventToString().apply(event));
         if (def.getTerminalStates().contains(currentState)) {
-            LOGGER.debug("state machine instance of type {}, with ID {} receives event {} while in terminal state {}. Aborting.", def.getName(), id, def.getEventToString().apply(event),  currentState);
+            LOGGER.debug("state machine instance of type {}, with ID {} receives event {} while in terminal state {}. Aborting.", def.getName(), id, def.getEventToString().apply(event), currentState);
             throw new IllegalStateException(new IllegalStateException("state machine of type " + def.getName() + " with ID " + id + " event " + event.toString() + " has received an event while in ternminal state " + currentState + ". Aborting."));
         } else if (isErrorState()) {
             LOGGER.error("a state machine cannot accept event when in error state:  type {}, id {}, error '{}'", def.getName(), id, error.get());
             throw new IllegalStateException("a state machine cannot accept event when in error state:  type " + def.getName() + ", id " + id + "  error " + error.get());
         } else {
-            Transition<S, E> transition = def.findEventTransion(currentState, event).orElseThrow(() -> new IllegalStateException("for machines of type " + def.getName() + " event " + event.toString() + " does not trigger any transition out of state " + currentState.toString()));
+            Transition<S, E> transition = def.findEventTransition(currentState, event).orElseThrow(() -> new IllegalStateException("for machines of type " + def.getName() + " event " + event.toString() + " does not trigger any transition out of state " + currentState.toString()));
             if (LOGGER.isDebugEnabled())
                 LOGGER.debug("a transition was found for machine instance of type {}, with ID {} from state {} to state {} on event {}",
                         def.getName(),
@@ -190,13 +191,14 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
         if (LOGGER.isDebugEnabled())
             LOGGER.debug("state machine instance of type {}, with ID {} receives event {} with parameter {}", def.getName(), id, def.getEventToString().apply(event), param.toString());
         if (def.getTerminalStates().contains(currentState)) {
-            LOGGER.debug("state machine instance of type {}, with ID {} receives event {} while in terminal state {}. Aborting.", def.getName(), id, def.getEventToString().apply(event),  currentState);
+            LOGGER.debug("state machine instance of type {}, with ID {} receives event {} while in terminal state {}. Aborting.", def.getName(), id, def.getEventToString().apply(event), currentState);
             throw new IllegalStateException(new IllegalStateException("state machine of type " + def.getName() + " with ID " + id + " event " + event.toString() + " has received an event while in ternminal state " + currentState + ". Aborting."));
         } else if (isErrorState()) {
             LOGGER.error("a state machine cannot accept event when in error state:  type {}, id {}, error '{}'", def.getName(), id, error.get());
             throw new IllegalStateException("a state machine cannot accept event when in error state:  type " + def.getName() + ", id " + id + "  error " + error.get());
-        } {
-            final Transition<S, E> transition = def.findEventTransion(currentState, event).orElseThrow(() -> new IllegalStateException("for machines of type " + def.getName() + " event " + event.toString() + " does not trigger any transition out of state " + currentState.toString()));
+        }
+        {
+            final Transition<S, E> transition = def.findEventTransition(currentState, event).orElseThrow(() -> new IllegalStateException("for machines of type " + def.getName() + " event " + event.toString() + " does not trigger any transition out of state " + currentState.toString()));
             if (LOGGER.isDebugEnabled())
                 LOGGER.debug("a transition was found for machine instance of type {}, with ID {} from state {} to state {} on event {}",
                         def.getName(),
@@ -258,15 +260,14 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
                     final ImmutableMap<String, Object> stashStore = action.map(TransitionAction::getStashStore).orElseGet(() -> ImmutableMap.<String, Object>builder().build());
                     if (LOGGER.isDebugEnabled())
                         LOGGER.debug("transition for state machine instance of type {}, with ID {}, out of state {} to state {} completed, preparing to save", def.getName(), id, def.getStateToString().apply(currentState), def.getStateToString().apply(newState));
-                    final Machine<S, E> updatedMachine = persistenceCallback.update(newMachine);
+                    final Machine<S, E> updatedMachine = update(newMachine, transition, param, null);
                     return new MachineAndStash<>(updatedMachine, stashStore);
                 } catch (Throwable t) {
                     if (LOGGER.isDebugEnabled())
                         LOGGER.debug("transition for state machine instance of type {}, with ID {}, out of state {} to state {} failed, switching to error state and saving", def.getName(), id, def.getStateToString().apply(currentState), def.getStateToString().apply(newState));
                     if (LOGGER.isDebugEnabled())
                         LOGGER.debug("commited persistence transaction for state machine instance of type {}, with ID {} - invoking error handler and saving", def.getName(), id);
-                    def.getErrorHandler().accept(new DefaultErrorData<>(transition, param, t));
-                    final Machine<S, E> updatedMachine = applyErrorState(t, ErrorType.TRANSITION);
+                    final Machine<S, E> updatedMachine = applyErrorState(transition, param, t, ErrorType.TRANSITION);
                     return new MachineAndStash<>(updatedMachine, t);
                 }
             });
@@ -292,7 +293,7 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
                     postAction.setStash(ImmutableMap.<String, Object>builder().putAll(machineAndStash.getStashStore()).build());
                     postAction.accept(machineAndStash.getMachine().getContext(), param);
                 } catch (Throwable t) {
-                    applyErrorState(t, ErrorType.POST_TRANSITION);
+                    applyErrorState(transition, param, t, ErrorType.POST_TRANSITION);
                     throw new TransitionException(machine, transition, ErrorType.POST_TRANSITION, t);
                 }
             });
@@ -300,11 +301,23 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
         }
     }
 
-    private Machine<S, E> applyErrorState(Throwable t, ErrorType newErrorType) {
+    private <P> Machine<S, E> applyErrorState(Transition<S, E> transition, P param, Throwable t, ErrorType newErrorType) {
         final String message = t.getMessage();
-        Optional<String> newError = Optional.of(message == null ? t.getClass().getSimpleName() :  message);
+        Optional<String> newError = Optional.of(message == null ? t.getClass().getSimpleName() : message);
         final MachineInstanceImpl<S, E> newMachine = new MachineInstanceImpl<>(id, def, currentState, context, history, newErrorType, newError, persistenceCallback);
-        return persistenceCallback.update(newMachine);
+        return update(newMachine, transition, param, t);
+    }
+
+    private <P> Machine<S, E> update(Machine<S, E> newMachine, Transition<S, E> transition, P param, Throwable t) {
+        long now = Instant.now().toEpochMilli();
+        if (newMachine.getErrorType() == ErrorType.TRANSITION) {
+            def.getErrorHandler().accept(new DefaultErrorData<>(now, transition, param, t, false));
+        } else if (newMachine.getErrorType() == ErrorType.POST_TRANSITION) {
+            def.getErrorHandler().accept(new DefaultErrorData<>(now, transition, param, t, true));
+        } else if (newMachine.getErrorType() == ErrorType.NONE && def.findStpTransition(newMachine.getCurrentState(), context).isEmpty()) {
+            def.getTransitionHandler().accept(new DefaultTransitionData<>(now, transition, param));
+        }
+        return persistenceCallback.update(newMachine, now);
     }
 
     @Override
@@ -317,11 +330,35 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
         private final Transition<S, E> transition;
         private final P param;
         private final Throwable t;
+        private final boolean isPostActionError;
+        private final long lastModifiedEpoch;
 
-        public DefaultErrorData(Transition<S, E> transition, P param, Throwable t) {
+        public DefaultErrorData(long lastModifiedEpoch, Transition<S, E> transition, P param, Throwable t, boolean isPostActionError) {
+            this.lastModifiedEpoch = lastModifiedEpoch;
             this.transition = transition;
             this.param = param;
             this.t = t;
+            this.isPostActionError = isPostActionError;
+        }
+
+        @Override
+        public String getStateMachineId() {
+            return getId();
+        }
+
+        @Override
+        public String getStateMachineType() {
+            return def.getName();
+        }
+
+        @Override
+        public long getLastModifiedEpoch() {
+            return lastModifiedEpoch;
+        }
+
+        @Override
+        public boolean isPostActionError() {
+            return isPostActionError;
         }
 
         @Override
@@ -352,6 +389,53 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
         @Override
         public String getErrorMessage() {
             return t.getMessage();
+        }
+    }
+
+    private class DefaultTransitionData<S, E, P> implements TransitionData<S, E> {
+        private final Transition<S, E> transition;
+        private final P param;
+        private final long lastModifiedEpoch;
+
+        public DefaultTransitionData(long lastModifiedEpoch, Transition<S, E> transition, P param) {
+            this.lastModifiedEpoch = lastModifiedEpoch;
+            this.transition = transition;
+            this.param = param;
+        }
+
+        @Override
+        public String getStateMachineId() {
+            return getId();
+        }
+
+        @Override
+        public String getStateMachineType() {
+            return def.getName();
+        }
+
+        @Override
+        public long getLastModifiedEpoch() {
+            return lastModifiedEpoch;
+        }
+
+        @Override
+        public S getFrom() {
+            return transition.getFrom();
+        }
+
+        @Override
+        public S getTo() {
+            return transition.getTo();
+        }
+
+        @Override
+        public Optional<E> getEvent() {
+            return transition.getEvent();
+        }
+
+        @Override
+        public Map<String, String> getContext() {
+            return new HashMap<>(context);
         }
     }
 }

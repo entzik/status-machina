@@ -93,7 +93,7 @@ public class SpringJpaStateMachineService<S, E> implements StateMachineService<S
 
     public ExternalState create(Machine<S, E> instance) {
         final String id = instance.getId();
-        final ExternalState entity = externalStateRepository.findById(id).map(es -> updateExternalState(es, instance)).orElseGet(() -> extractExternalState(instance));
+        final ExternalState entity = externalStateRepository.findById(id).map(es -> updateExternalState(es, instance, Instant.now().toEpochMilli())).orElseGet(() -> extractExternalState(instance));
         return externalStateRepository.save(entity);
     }
 
@@ -117,9 +117,9 @@ public class SpringJpaStateMachineService<S, E> implements StateMachineService<S
         );
     }
 
-    public void update(Machine<S, E> instance) {
+    public void update(Machine<S, E> instance, long epochMilliForUpdate) {
         final ExternalState currentState = externalStateRepository.findById(instance.getId()).orElseThrow();
-        final ExternalState updatedState = updateExternalState(currentState, instance);
+        final ExternalState updatedState = updateExternalState(currentState, instance, epochMilliForUpdate);
         externalStateRepository.save(updatedState);
     }
 
@@ -145,7 +145,7 @@ public class SpringJpaStateMachineService<S, E> implements StateMachineService<S
 
     private List<MachineSnapshot> getMachineSnapshots(List<ExternalState> states) {
         return states
-                .stream().map(state -> new MachineSnapshot(state.getType(), state.getId(), state.getCurrentState(), state.getContext(), state.getErrorType(), state.getError()))
+                .stream().map(state -> new MachineSnapshot(state.getType(), state.getId(), state.getCurrentState(), state.getContext(), state.getErrorType(), state.getError(), state.getLastModifiedEpoch()))
                 .collect(Collectors.toList());
     }
 
@@ -166,7 +166,7 @@ public class SpringJpaStateMachineService<S, E> implements StateMachineService<S
         return currentState;
     }
 
-    private <S, E> ExternalState updateExternalState(ExternalState currentState, Machine<S, E> machineInstance) {
+    private <S, E> ExternalState updateExternalState(ExternalState currentState, Machine<S, E> machineInstance, long epochMilliForUpdate) {
         currentState
                 .setType(machineInstance.getDefinition().getName())
                 .setCurrentState(machineInstance.getDefinition().getStateToString().apply(machineInstance.getCurrentState()))
@@ -174,7 +174,7 @@ public class SpringJpaStateMachineService<S, E> implements StateMachineService<S
                 .setError(machineInstance.getError().orElse("no error"))
                 .setLocked(true)
                 .setDone(machineInstance.isTerminalState())
-                .setLastModifiedEpoch(Instant.now().toEpochMilli());
+                .setLastModifiedEpoch(epochMilliForUpdate);
         applyTargetContext(currentState, machineInstance);
 
         return currentState;
@@ -221,9 +221,9 @@ public class SpringJpaStateMachineService<S, E> implements StateMachineService<S
         }
 
         @Override
-        public Machine<S, E> update(Machine<S, E> machine) {
+        public Machine<S, E> update(Machine<S, E> machine, long epochMilliForUpdate) {
             return transactionRetryTemplate.execute(context -> {
-                stateMachineService.update(machine);
+                stateMachineService.update(machine, epochMilliForUpdate);
                 return machine;
             });
         }

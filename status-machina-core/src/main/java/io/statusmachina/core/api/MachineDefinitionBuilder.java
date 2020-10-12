@@ -112,6 +112,14 @@ public interface MachineDefinitionBuilder<S, E> {
     MachineDefinitionBuilder<S, E> errorHandler(Consumer<ErrorData<S, E>> errorHandler);
 
     /**
+     * configures a callback that will be invoked when the machine is coming in a state where no stp transition exists on it
+     *
+     * @param transitionHandler the callbacl
+     * @return an instance of the machine definition builder configured with the transition handling callback
+     */
+    MachineDefinitionBuilder<S, E> transitionHandler(Consumer<TransitionData<S, E>> transitionHandler);
+
+    /**
      * configures the transitions that define how the state machines moves from one state to another either in reaction
      * to events being received or through STP (straight through processing) when conditions are met
      * <p>
