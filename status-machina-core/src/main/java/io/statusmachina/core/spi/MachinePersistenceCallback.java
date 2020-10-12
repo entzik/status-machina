@@ -50,7 +50,7 @@ public interface MachinePersistenceCallback<S, E> {
      *
      * @return an updated instance of the machine
      */
-    Machine<S, E> update(Machine<S, E> machine);
+    Machine<S, E> update(Machine<S, E> machine, long epochMilliForUpdate);
 
     /**
      * Executes a {@link Callable} in a transactional context

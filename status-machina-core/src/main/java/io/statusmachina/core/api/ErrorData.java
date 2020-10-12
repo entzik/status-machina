@@ -24,7 +24,12 @@ import java.util.Optional;
  * @param <S> the type of the state machine's state
  * @param <E> the type of event the state machine accepts
  */
-public interface ErrorData<S, E> {
+public interface ErrorData<S, E> extends StateMachineData{
+    /**
+     * @return true if the error is arrived since the post action, else false
+     */
+    boolean isPostActionError();
+
     /**
      * @return the state from which the machine was transitioning out
      */

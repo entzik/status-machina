@@ -69,7 +69,7 @@ public class MachineInstanceBuilderImpl<S,E> implements MachineBuilder<S,E> {
                 }
 
                 @Override
-                public Machine<S, E> update(Machine<S, E> machine) {
+                public Machine<S, E> update(Machine<S, E> machine, long epochMilliForUpdate) {
                     return machine;
                 }
 

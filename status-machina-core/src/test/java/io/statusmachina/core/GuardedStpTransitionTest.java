@@ -53,7 +53,7 @@ public class GuardedStpTransitionTest {
         }
 
         @Override
-        public Machine<States, Events> update(Machine<States, Events> machine) {
+        public Machine<States, Events> update(Machine<States, Events> machine, long epochMilliForUpdate) {
             return machine;
         }
 

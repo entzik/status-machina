@@ -18,11 +18,13 @@ package io.statusmachina.spring.jpa.repo;
 
 import io.statusmachina.spring.jpa.model.ExternalState;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 
 public interface ExternalStateRepository extends JpaRepository<ExternalState, String> {
+    @Query("select s from ExternalState s where s.errorType = 'NONE' and s.done is false and s.lastModifiedEpoch < ?1")
     List<ExternalState> findAllByLastModifiedEpochLessThan(long lastModifiedEpoch);
-    List<ExternalState> findAllByCurrentState(String currentSteter);
+    List<ExternalState> findAllByCurrentState(String currentState);
     List<ExternalState> findAllByDone(boolean done);
 }

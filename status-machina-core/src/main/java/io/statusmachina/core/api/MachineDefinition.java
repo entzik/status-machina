@@ -86,7 +86,7 @@ public interface MachineDefinition<S, E> {
      * @param event the event that triggers the transition
      * @return an STP transition, if any
      */
-    Optional<Transition<S, E>> findEventTransion(S state, E event);
+    Optional<Transition<S, E>> findEventTransition(S state, E event);
 
     /**
      * Provides a handler to be invoked when the machine enters an error state. An error state is reached when an
@@ -95,6 +95,13 @@ public interface MachineDefinition<S, E> {
      * @return the error handler
      */
     Consumer<ErrorData<S,E>> getErrorHandler();
+
+    /**
+     * Provides a handler to be invoked when the machine finish a no stp transition
+     *
+     * @return the error handler
+     */
+    Consumer<TransitionData<S,E>> getTransitionHandler();
 
     /**
      * @return the name of this state machine

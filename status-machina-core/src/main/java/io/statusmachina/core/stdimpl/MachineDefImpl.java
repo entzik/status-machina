@@ -22,6 +22,7 @@ import io.statusmachina.core.api.ErrorData;
 import io.statusmachina.core.api.MachineDefinition;
 import io.statusmachina.core.api.MachineDefinitionBuilder;
 import io.statusmachina.core.api.Transition;
+import io.statusmachina.core.api.TransitionData;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -48,6 +49,7 @@ public class MachineDefImpl<S, E> implements MachineDefinition<S, E> {
     final private Function<E, String> eventToString;
     final private Function<String, E> stringToEvent;
     private Consumer<ErrorData<S, E>> errorHandler;
+    private Consumer<TransitionData<S, E>> transitionHandler;
 
     public static <S, E> MachineDefinitionBuilder<S, E> newBuilder() {
         return new BuilderImpl<>();
@@ -61,6 +63,7 @@ public class MachineDefImpl<S, E> implements MachineDefinition<S, E> {
             Set<E> events,
             Set<Transition<S, E>> transitions,
             Consumer<ErrorData<S, E>> errorHandler,
+            Consumer<TransitionData<S, E>> transitionHandler,
             Function<S, String> stateToString,
             Function<String, S> stringToState,
             Function<E, String> eventToString,
@@ -68,6 +71,7 @@ public class MachineDefImpl<S, E> implements MachineDefinition<S, E> {
     ) {
         this.name = name;
         this.errorHandler = errorHandler;
+        this.transitionHandler = transitionHandler;
         this.stateToString = stateToString;
         this.stringToState = stringToState;
         this.eventToString = eventToString;
@@ -179,7 +183,7 @@ public class MachineDefImpl<S, E> implements MachineDefinition<S, E> {
      * @return the traansition
      */
     @Override
-    public Optional<Transition<S, E>> findEventTransion(S currentState, E event) {
+    public Optional<Transition<S, E>> findEventTransition(S currentState, E event) {
         final Predicate<Transition<S, E>> fromCurrentState = t -> t.getFrom().equals(currentState);
         final Predicate<Transition<S, E>> forThisEvent = t -> !t.isSTP() && t.getEvent().get().equals(event);
         return transitions.stream().filter(fromCurrentState.and(forThisEvent)).findFirst();
@@ -191,6 +195,11 @@ public class MachineDefImpl<S, E> implements MachineDefinition<S, E> {
     @Override
     public Consumer<ErrorData<S, E>> getErrorHandler() {
         return errorHandler;
+    }
+
+    @Override
+    public Consumer<TransitionData<S, E>> getTransitionHandler() {
+        return transitionHandler;
     }
 
     /**
@@ -213,6 +222,8 @@ public class MachineDefImpl<S, E> implements MachineDefinition<S, E> {
         private String name;
 
         private Consumer<ErrorData<S, E>> errorHandler;
+        private Consumer<TransitionData<S, E>> transitionHandler;
+
 
         private Function<S, String> stateToString;
         private Function<String, S> stringToState;
@@ -291,6 +302,12 @@ public class MachineDefImpl<S, E> implements MachineDefinition<S, E> {
         }
 
         @Override
+        public MachineDefinitionBuilder<S, E> transitionHandler(Consumer<TransitionData<S, E>> transitionHandler) {
+            this.transitionHandler = transitionHandler;
+            return this;
+        }
+
+        @Override
         public MachineDefinitionBuilder<S, E> transitions(Transition<S, E>... allTransitions) {
             Set<Transition<S, E>> transitions = new HashSet<>(Arrays.asList(allTransitions));
             if (events == null || allStates == null)
@@ -314,6 +331,8 @@ public class MachineDefImpl<S, E> implements MachineDefinition<S, E> {
                     new HashSet<>(transitions),
                     errorHandler == null ? errorData -> {
                     } : errorHandler,
+                    transitionHandler == null ? transitionData -> {
+                    } : transitionHandler,
                     stateToString,
                     stringToState,
                     eventToString,
