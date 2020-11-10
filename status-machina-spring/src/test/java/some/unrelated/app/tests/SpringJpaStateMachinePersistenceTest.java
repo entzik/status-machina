@@ -33,6 +33,7 @@ import some.unrelated.app.config.TestOneStateMachineConfiguration.States;
 import java.util.HashMap;
 import java.util.Map;
 
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
