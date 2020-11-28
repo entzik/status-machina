@@ -325,6 +325,10 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
         return def.getTerminalStates().contains(currentState);
     }
 
+    @Override
+    public boolean isIdleState() {
+        return def.getIdleStates().contains(currentState);
+    }
 
     private class DefaultErrorData<S, E, P> implements ErrorData<S, E> {
         private final Transition<S, E> transition;

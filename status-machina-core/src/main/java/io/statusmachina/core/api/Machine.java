@@ -70,6 +70,21 @@ public interface Machine<S, E> {
      */
     boolean isErrorState();
 
+    /**
+     * returns true if the current state is an idle state. see {@link MachineDefinition#getIdleStates()}
+     * @return true if the current state is an idle state, false if not
+     */
+    boolean isIdleState();
+
+    /**
+     * returns true if the current state is a terminal one
+     */
+    boolean isTerminalState();
+
+    /**
+     * starts the state machine. if there is any valid STP transition out of the initial state, it will be executed
+     * @return
+     */
     Machine<S, E> start();
 
     /**
@@ -112,9 +127,4 @@ public interface Machine<S, E> {
      * @param context the context to be applied
      */
     Machine<S,E> recoverFromError(S state, Map<String, String> context);
-
-    /**
-     * returns true if the current state is a terminal one
-     */
-    boolean isTerminalState();
 }

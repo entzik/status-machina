@@ -160,6 +160,7 @@ public class SpringJpaStateMachineService<S, E> implements StateMachineService<S
                 .setError(machineInstance.getError().orElse("no error"))
                 .setContext(new HashMap<>(machineInstance.getContext()))
                 .setLocked(true)
+                .setIdle(machineInstance.isIdleState())
                 .setDone(machineInstance.isTerminalState())
                 .setLastModifiedEpoch(Instant.now().toEpochMilli());
 
@@ -173,6 +174,7 @@ public class SpringJpaStateMachineService<S, E> implements StateMachineService<S
                 .setErrorType(machineInstance.getErrorType())
                 .setError(machineInstance.getError().orElse("no error"))
                 .setLocked(true)
+                .setIdle(machineInstance.isIdleState())
                 .setDone(machineInstance.isTerminalState())
                 .setLastModifiedEpoch(epochMilliForUpdate);
         applyTargetContext(currentState, machineInstance);

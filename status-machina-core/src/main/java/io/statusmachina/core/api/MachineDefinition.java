@@ -60,6 +60,15 @@ public interface MachineDefinition<S, E> {
     S getInitialState();
 
     /**
+     * Idle states are states on which the machine is expected to pause for a long period of time, but are not final
+     * states. Idle states are useful when modelling perpetual or very long lived state machines. They allow the machine
+     * to pause in an idle state without the machine being picked up as stale by monitoring tools
+     *
+     * @return a set of idle states.
+     */
+    Set<S> getIdleStates();
+
+    /**
      * @return set of terminal states. Once the machine reaches one of this states it is considered to be completed. it is not possible to
      * configure transitions out of a terminal state
      */

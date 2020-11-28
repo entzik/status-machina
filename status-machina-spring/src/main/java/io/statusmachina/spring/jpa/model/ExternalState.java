@@ -58,8 +58,12 @@ public class ExternalState {
     @Column(name = "done")
     boolean done;
 
+    @Column(name = "idle")
+    boolean idle;
+
     @Column(name = "locked")
     @NotNull
+    @Deprecated
     boolean locked;
 
     @ElementCollection(fetch = FetchType.EAGER)
@@ -91,10 +95,12 @@ public class ExternalState {
         return version;
     }
 
+    @Deprecated
     public boolean isLocked() {
         return locked;
     }
 
+    @Deprecated
     public ExternalState setLocked(boolean locked) {
         this.locked = locked;
         return this;
@@ -168,5 +174,12 @@ public class ExternalState {
         return this;
     }
 
+    public boolean isIdle() {
+        return idle;
+    }
 
+    public ExternalState setIdle(boolean idle) {
+        this.idle = idle;
+        return this;
+    }
 }

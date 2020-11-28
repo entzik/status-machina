@@ -38,6 +38,7 @@ import java.util.function.Predicate;
 public class MachineDefImpl<S, E> implements MachineDefinition<S, E> {
     final private ImmutableSet<S> allStates;
     final private S initialState;
+    final private ImmutableSet<S> idleStates;
     final private ImmutableSet<S> terminalStates;
 
     final private ImmutableSet<E> events;
@@ -69,6 +70,24 @@ public class MachineDefImpl<S, E> implements MachineDefinition<S, E> {
             Function<E, String> eventToString,
             Function<String, E> stringToEvent
     ) {
+        this(name, allStates, initialState, Set.of(), terminalStates, events, transitions, errorHandler, transitionHandler, stateToString, stringToState, eventToString, stringToEvent);
+    }
+
+    public MachineDefImpl(
+            String name,
+            Set<S> allStates,
+            S initialState,
+            Set<S> idleStates,
+            Set<S> terminalStates,
+            Set<E> events,
+            Set<Transition<S, E>> transitions,
+            Consumer<ErrorData<S, E>> errorHandler,
+            Consumer<TransitionData<S, E>> transitionHandler,
+            Function<S, String> stateToString,
+            Function<String, S> stringToState,
+            Function<E, String> eventToString,
+            Function<String, E> stringToEvent
+    ) {
         this.name = name;
         this.errorHandler = errorHandler;
         this.transitionHandler = transitionHandler;
@@ -78,6 +97,7 @@ public class MachineDefImpl<S, E> implements MachineDefinition<S, E> {
         this.stringToEvent = stringToEvent;
         this.allStates = ImmutableSet.<S>builder().addAll(allStates).build();
         this.initialState = initialState;
+        this.idleStates = ImmutableSet.<S>builder().addAll(idleStates).build();
         this.terminalStates = ImmutableSet.<S>builder().addAll(terminalStates).build();
         this.events = ImmutableSet.<E>builder().addAll(events).build();
         this.transitions = ImmutableSet.<Transition<S, E>>builder().addAll(transitions).build();
@@ -100,6 +120,11 @@ public class MachineDefImpl<S, E> implements MachineDefinition<S, E> {
     @Override
     public S getInitialState() {
         return initialState;
+    }
+
+    @Override
+    public Set<S> getIdleStates() {
+        return idleStates;
     }
 
     /**
