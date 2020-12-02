@@ -193,7 +193,7 @@ public class MachineDefImpl<S, E> implements MachineDefinition<S, E> {
      * @return the stp transition
      */
     @Override
-    public Optional<Transition<S, E>> findStpTransition(S state, ImmutableMap<String,String> context) {
+    public Optional<Transition<S, E>> findStpTransition(S state, ImmutableMap<String, String> context) {
         return transitions.stream()
                 .filter(t -> t.getFrom().equals(state) && t.isSTP())
                 .filter(t -> t.getGuard().map(guard -> guard.test(context)).orElse(true))
@@ -238,6 +238,7 @@ public class MachineDefImpl<S, E> implements MachineDefinition<S, E> {
     public static class BuilderImpl<S, E> implements MachineDefinitionBuilder<S, E> {
         private Set<S> allStates;
         private S initialState;
+        private Set<S> idleStates;
         private Set<S> terminalStates;
 
         private Set<E> events;
@@ -267,7 +268,7 @@ public class MachineDefImpl<S, E> implements MachineDefinition<S, E> {
 
         @Override
         public MachineDefinitionBuilder<S, E> states(S... allStates) {
-            this.allStates = new HashSet<>(Arrays.asList(allStates));
+            this.allStates = Set.of(allStates);
             return this;
         }
 
@@ -281,8 +282,18 @@ public class MachineDefImpl<S, E> implements MachineDefinition<S, E> {
         }
 
         @Override
+        public MachineDefinitionBuilder<S, E> idleStates(S... idles) {
+            Set<S> idleStates = Set.of(initialState);
+            if (allStates == null || !allStates.containsAll(idleStates))
+                throw new IllegalArgumentException("All states must be defined before defining the initial state. Terminal states must be selected among previously defined states.");
+            else
+                this.idleStates = idleStates;
+            return this;
+        }
+
+        @Override
         public MachineDefinitionBuilder<S, E> terminalStates(S... terminals) {
-            Set<S> terminalStates = new HashSet<>(Arrays.asList(terminals));
+            Set<S> terminalStates = Set.of(terminals);
             if (allStates == null || !allStates.containsAll(terminalStates))
                 throw new IllegalArgumentException("All states must be defined before defining the initial state. Terminal states must be selected among previously defined states.");
             else
@@ -347,13 +358,14 @@ public class MachineDefImpl<S, E> implements MachineDefinition<S, E> {
 
         @Override
         public MachineDefinition<S, E> build() {
-            return new MachineDefImpl<S, E>(
+            return new MachineDefImpl<>(
                     name,
-                    new HashSet<>(allStates),
+                    Set.copyOf(allStates),
                     initialState,
-                    new HashSet<>(terminalStates),
-                    new HashSet<>(events),
-                    new HashSet<>(transitions),
+                    idleStates == null ? Set.of() : Set.copyOf(idleStates),
+                    terminalStates == null ? Set.of() : Set.copyOf(terminalStates),
+                    events == null ? Set.of() : Set.copyOf(events),
+                    transitions == null ? Set.of() : Set.copyOf(transitions),
                     errorHandler == null ? errorData -> {
                     } : errorHandler,
                     transitionHandler == null ? transitionData -> {

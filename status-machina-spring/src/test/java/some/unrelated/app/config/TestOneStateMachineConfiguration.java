@@ -82,6 +82,7 @@ public class TestOneStateMachineConfiguration {
                 .name("toto")
                 .states(States.values())
                 .initialState(States.S1)
+//                .idleStates(States.S2)
                 .terminalStates(States.S4, States.S5)
                 .events(Events.values())
                 .transitions(t1, t2, t3, t4)

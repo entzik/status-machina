@@ -52,6 +52,8 @@ public interface MachineDefinitionBuilder<S, E> {
      */
     MachineDefinitionBuilder<S, E> initialState(S initialState);
 
+    MachineDefinitionBuilder<S,E> idleStates(S... idleStates);
+
     /**
      * configures the state machine's terminal states. when the state machine arrived in one of these states no
      * further transitions are possible. the terminal states must be a subset of the states returned
