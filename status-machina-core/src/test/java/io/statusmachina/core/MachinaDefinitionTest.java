@@ -36,6 +36,7 @@ public class MachinaDefinitionTest {
             .name("toto")
             .states(States.values())
             .initialState(States.S1)
+            .idleStates(States.S2, States.S3)
             .terminalStates(States.S4, States.S5)
             .events(Events.values())
             .transitions(t1, t2, t3, t4)
@@ -59,6 +60,7 @@ public class MachinaDefinitionTest {
         assertThat(def.getAllStates()).containsOnly(States.values()).as("state machine definition was correctly configured with all states");
         assertThat(def.getInitialState()).isEqualTo(States.S1).as("state machine configured with expected initial state");
         assertThat(def.getTerminalStates()).containsOnly(States.S4, States.S5).as("state machine configured with expected terminal states");
+        assertThat(def.getIdleStates()).containsOnly(States.S2, States.S3);
     }
 
     enum States {

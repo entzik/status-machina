@@ -283,9 +283,9 @@ public class MachineDefImpl<S, E> implements MachineDefinition<S, E> {
 
         @Override
         public MachineDefinitionBuilder<S, E> idleStates(S... idles) {
-            Set<S> idleStates = Set.of(initialState);
+            Set<S> idleStates = Set.of(idles);
             if (allStates == null || !allStates.containsAll(idleStates))
-                throw new IllegalArgumentException("All states must be defined before defining the initial state. Terminal states must be selected among previously defined states.");
+                throw new IllegalArgumentException("All states must be defined before defining the initial state. Idle states must be selected among previously defined states.");
             else
                 this.idleStates = idleStates;
             return this;
