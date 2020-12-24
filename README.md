@@ -47,7 +47,7 @@ Markin states as idle prevents state machines parked in states such as describe 
 
 ### Events and Transitions
 
-After having specified your states you need to to specify all the **events** to which the state machine is expected to react, and of course, the **transitions** triggered by these events out of various states. In total 8 lines of composable API.
+After having specified your states you need to specify all the **events** to which the state machine is expected to react, and of course, the **transitions** triggered by these events out of various states. In total, just a few lines of composable API.
 
 There are some rules though. Building the machine definition will fail if
 1. a state that is not final does not have any transition being defined out of it
@@ -71,6 +71,7 @@ final MachineDefinition<States, Events> def = new EnumBasedMachineDefinitionBuil
         .name("toto")
         .states(States.values())
         .initialState(States.S1)
+        .idleStates(States.S2, States.S3)
         .terminalStates(States.S4, States.S5)
         .events(Events.values())
         .transitions(t1, t2, t3, t4)
@@ -311,7 +312,7 @@ The ```StateMachineService``` offers a set of useful functionalities that help m
 
 - find all machines that have terminated
 - find all machines that are in an error state, and get details about those errors
-- find all machines that are stalled, that is, they are not in a terminal state and have not received an event in a specified amoutn of time.
+- find all machines that are stalled, that is, they are not in a terminal state and have not received an event in a specified amount of time. Remember that machines waiting in idle states should not be considered stale.
 - take a machine out of error state and have it resume its function.
 
 The code snippet bellow shows typical usage examples of this functionality.
