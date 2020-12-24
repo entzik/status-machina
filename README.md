@@ -36,7 +36,18 @@ enum Events {
 
 you first need to define your transitions, then use the composable API to define the machine.
 
-To define the machine you must define the initial state, one or more final states and also all the other states in between. Then you need to to specify all the events to which the state machine is expected to react, and of course, the transitions triggered by these events out of various states. In total 8 lines of composable API.
+### States
+
+To define the machine you must define the **initial state**, one or more **final states** and also all the other states in between. 
+
+#### Idle States
+Another category of states are **idle states**. Idle states can be used to model situations where a state machine marks a long pause in a particular state. This can happen if the machine is waiting for an event delivered following a human action, or for an event triggered by an external condition. In a home monitoring system for example, this could be the temperature going above or bellow a certain limit, a door or window opening, and so on.
+
+Markin states as idle prevents state machines parked in states such as describe above to be considered stale.
+
+### Events and Transitions
+
+After having specified your states you need to to specify all the **events** to which the state machine is expected to react, and of course, the **transitions** triggered by these events out of various states. In total 8 lines of composable API.
 
 There are some rules though. Building the machine definition will fail if
 1. a state that is not final does not have any transition being defined out of it
