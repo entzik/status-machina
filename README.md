@@ -1,10 +1,31 @@
 # Status Machina
 
-A small, simple and pragmatic state machine engine targeted at resilient micro-services orchestration.
+A small, simple and pragmatic state machine engine targeted at resilient micro-services orchestration and small business workflows.
 
 It offers a core library and a spring integration library.
 
 The spring itegration libary persists and ensures distributed consensus on state machine transitions using a relational database and SpringDataJPA
+
+## Design Principles
+
+The main design principle of Status Machina is extensibility and adaptability. 
+
+### Core contracts
+
+The **core contracts** of Status Machina, the way states and transitions are defined and the ways transitions are governed, are expressed as a rebust set of interfaces.
+
+### Extensibility
+
+The default implementation of these interfaces uses states and events defined as enumerations, but if that is not working for you, your states and events can be anything, you just have to re-implement some of the interfaces to handle the type of objects you want.
+
+The default implementation is extensible as well. However, instead of choosing the object oriented extension strategy, where one would derive a class and override protected or private methods, we have chosen to a more functional extension strategy where one can inject lambda function into well defined extension points.
+
+We believe the latter is a safer, more robust approach to extensibility.
+
+### Integration
+
+The Status Machina core does not assume any framework. You can use it as it is, but you can also build integrations with the application framework of your choice. There is a default spring boot integration but it is equaly trivial to build the same for [Quarkus](https://quarkus.io/), [Micronaut](https://micronaut.io/), [Vert.X](https://vertx.io/) or [Lagom](https://www.lagomframework.com/).
+
 
 ## Users
 
