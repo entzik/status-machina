@@ -23,6 +23,8 @@ import io.statusmachina.core.api.MachineDefinition;
 import io.statusmachina.core.api.MachineDefinitionBuilder;
 import io.statusmachina.core.api.Transition;
 import io.statusmachina.core.api.TransitionData;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -236,6 +238,28 @@ public class MachineDefImpl<S, E> implements MachineDefinition<S, E> {
     }
 
     public static class BuilderImpl<S, E> implements MachineDefinitionBuilder<S, E> {
+        public final Consumer<ErrorData<S, E>> ERROR_DATA_CONSUMER = errorData -> {
+            final Logger LOGGER = LoggerFactory.getLogger("StatusMachina-" + BuilderImpl.this.name + "-DefaultErrorHandler");
+            LOGGER.error("state machine with id " +
+                            errorData.getStateMachineId() +
+                            " of type " +
+                            errorData.getStateMachineType() +
+                            " got error: \"" +
+                            errorData.getErrorMessage() +
+                            "\" when transitioning from state " + errorData.getFrom() + " to " + errorData.getTo() + " in response to event: " + errorData.getEvent()
+                    , errorData.getCause());
+
+        };
+        public final Consumer<TransitionData<S, E>> TRANSITION_DATA_CONSUMER = transitionData -> {
+            final Logger LOGGER = LoggerFactory.getLogger("StatusMachina-" + BuilderImpl.this.name + "-DefaultTransactionDataLogger");
+            LOGGER.debug("state machine with id " +
+                    transitionData.getStateMachineId() +
+                    " of type " +
+                    transitionData.getStateMachineType() +
+                    "has successfully transitioned from state " +
+                    transitionData.getFrom() + " to " + transitionData.getTo() + " in response to event: " + transitionData.getEvent()
+            );
+        };
         private Set<S> allStates;
         private S initialState;
         private Set<S> idleStates;
@@ -366,10 +390,8 @@ public class MachineDefImpl<S, E> implements MachineDefinition<S, E> {
                     terminalStates == null ? Set.of() : Set.copyOf(terminalStates),
                     events == null ? Set.of() : Set.copyOf(events),
                     transitions == null ? Set.of() : Set.copyOf(transitions),
-                    errorHandler == null ? errorData -> {
-                    } : errorHandler,
-                    transitionHandler == null ? transitionData -> {
-                    } : transitionHandler,
+                    errorHandler == null ? ERROR_DATA_CONSUMER : errorHandler,
+                    transitionHandler == null ? TRANSITION_DATA_CONSUMER : transitionHandler,
                     stateToString,
                     stringToState,
                     eventToString,
