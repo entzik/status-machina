@@ -240,24 +240,24 @@ public class MachineDefImpl<S, E> implements MachineDefinition<S, E> {
     public static class BuilderImpl<S, E> implements MachineDefinitionBuilder<S, E> {
         public final Consumer<ErrorData<S, E>> ERROR_DATA_CONSUMER = errorData -> {
             final Logger LOGGER = LoggerFactory.getLogger("StatusMachina-" + BuilderImpl.this.name + "-DefaultErrorHandler");
-            LOGGER.error("state machine with id " +
-                            errorData.getStateMachineId() +
-                            " of type " +
-                            errorData.getStateMachineType() +
-                            " got error: \"" +
-                            errorData.getErrorMessage() +
-                            "\" when transitioning from state " + errorData.getFrom() + " to " + errorData.getTo() + " in response to event: " + errorData.getEvent()
+            LOGGER.error("state machine with id {} of type {} got error: \"{}\" when transitioning from state {} to {} in response to event: {}"
+                    , errorData.getStateMachineId()
+                    , errorData.getStateMachineType()
+                    , errorData.getErrorMessage()
+                    , BuilderImpl.this.stateToString.apply(errorData.getFrom())
+                    , BuilderImpl.this.stateToString.apply(errorData.getTo())
+                    , errorData.getEvent().map(ev -> BuilderImpl.this.eventToString.apply(ev)).orElse("STP")
                     , errorData.getCause());
 
         };
         public final Consumer<TransitionData<S, E>> TRANSITION_DATA_CONSUMER = transitionData -> {
             final Logger LOGGER = LoggerFactory.getLogger("StatusMachina-" + BuilderImpl.this.name + "-DefaultTransactionDataLogger");
-            LOGGER.debug("state machine with id " +
-                    transitionData.getStateMachineId() +
-                    " of type " +
-                    transitionData.getStateMachineType() +
-                    "has successfully transitioned from state " +
-                    transitionData.getFrom() + " to " + transitionData.getTo() + " in response to event: " + transitionData.getEvent()
+            LOGGER.debug("state machine with id {} of type {} has successfully transitioned from state {} to {} in response to event: {}"
+                    , transitionData.getStateMachineId()
+                    , transitionData.getStateMachineType()
+                    , BuilderImpl.this.stateToString.apply(transitionData.getFrom())
+                    , BuilderImpl.this.stateToString.apply(transitionData.getTo())
+                    , transitionData.getEvent().map(ev -> BuilderImpl.this.eventToString.apply(ev)).orElse("STP")
             );
         };
         private Set<S> allStates;
