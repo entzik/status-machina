@@ -13,7 +13,7 @@ plugins {
     `idea`
     `eclipse`
     signing
-    id("org.springframework.boot") version "2.3.0.RELEASE"
+    id("org.springframework.boot") version "2.5.12"
 }
 
 apply(plugin = "io.spring.dependency-management")
@@ -32,7 +32,6 @@ dependencies {
     // api("org.apache.commons:commons-math3:3.6.1")
 
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
-    // implementation("com.google.guava:guava:26.0-jre")
     compileOnly("org.springframework.boot:spring-boot-starter")
     compileOnly("org.springframework.boot:spring-boot-starter-data-jpa")
     compileOnly("org.springframework.retry:spring-retry")

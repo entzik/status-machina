@@ -23,6 +23,8 @@ import io.statusmachina.core.api.MachineDefinition;
 import io.statusmachina.core.api.MachineDefinitionBuilder;
 import io.statusmachina.core.api.Transition;
 import io.statusmachina.core.api.TransitionData;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -236,6 +238,28 @@ public class MachineDefImpl<S, E> implements MachineDefinition<S, E> {
     }
 
     public static class BuilderImpl<S, E> implements MachineDefinitionBuilder<S, E> {
+        public final Consumer<ErrorData<S, E>> ERROR_DATA_CONSUMER = errorData -> {
+            final Logger LOGGER = LoggerFactory.getLogger("StatusMachina-" + BuilderImpl.this.name + "-DefaultErrorHandler");
+            LOGGER.error("state machine with id {} of type {} got error: \"{}\" when transitioning from state {} to {} in response to event: {}"
+                    , errorData.getStateMachineId()
+                    , errorData.getStateMachineType()
+                    , errorData.getErrorMessage()
+                    , BuilderImpl.this.stateToString.apply(errorData.getFrom())
+                    , BuilderImpl.this.stateToString.apply(errorData.getTo())
+                    , errorData.getEvent().map(ev -> BuilderImpl.this.eventToString.apply(ev)).orElse("STP")
+                    , errorData.getCause());
+
+        };
+        public final Consumer<TransitionData<S, E>> TRANSITION_DATA_CONSUMER = transitionData -> {
+            final Logger LOGGER = LoggerFactory.getLogger("StatusMachina-" + BuilderImpl.this.name + "-DefaultTransactionDataLogger");
+            LOGGER.debug("state machine with id {} of type {} has successfully transitioned from state {} to {} in response to event: {}"
+                    , transitionData.getStateMachineId()
+                    , transitionData.getStateMachineType()
+                    , BuilderImpl.this.stateToString.apply(transitionData.getFrom())
+                    , BuilderImpl.this.stateToString.apply(transitionData.getTo())
+                    , transitionData.getEvent().map(ev -> BuilderImpl.this.eventToString.apply(ev)).orElse("STP")
+            );
+        };
         private Set<S> allStates;
         private S initialState;
         private Set<S> idleStates;
@@ -366,10 +390,8 @@ public class MachineDefImpl<S, E> implements MachineDefinition<S, E> {
                     terminalStates == null ? Set.of() : Set.copyOf(terminalStates),
                     events == null ? Set.of() : Set.copyOf(events),
                     transitions == null ? Set.of() : Set.copyOf(transitions),
-                    errorHandler == null ? errorData -> {
-                    } : errorHandler,
-                    transitionHandler == null ? transitionData -> {
-                    } : transitionHandler,
+                    errorHandler == null ? ERROR_DATA_CONSUMER : errorHandler,
+                    transitionHandler == null ? TRANSITION_DATA_CONSUMER : transitionHandler,
                     stateToString,
                     stringToState,
                     eventToString,

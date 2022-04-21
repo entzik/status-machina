@@ -60,4 +60,6 @@ public interface ErrorData<S, E> extends StateMachineData{
      * @return the error message
      */
     String getErrorMessage();
+
+    public Throwable getCause();
 }

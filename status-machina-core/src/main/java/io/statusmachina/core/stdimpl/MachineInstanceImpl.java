@@ -394,6 +394,11 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
         public String getErrorMessage() {
             return t.getMessage();
         }
+
+        @Override
+        public Throwable getCause() {
+            return t;
+        }
     }
 
     private class DefaultTransitionData<S, E, P> implements TransitionData<S, E> {
