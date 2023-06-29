@@ -314,7 +314,7 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
             def.getErrorHandler().accept(new DefaultErrorData<>(now, transition, param, t, false));
         } else if (newMachine.getErrorType() == ErrorType.POST_TRANSITION) {
             def.getErrorHandler().accept(new DefaultErrorData<>(now, transition, param, t, true));
-        } else if (newMachine.getErrorType() == ErrorType.NONE && def.findStpTransition(newMachine.getCurrentState(), context).isEmpty()) {
+        } else if (newMachine.getErrorType() == ErrorType.NONE && def.findStpTransition(newMachine.getCurrentState(), newMachine.getContext()).isEmpty()) {
             def.getTransitionHandler().accept(new DefaultTransitionData<>(now, transition, param));
         }
         return persistenceCallback.update(newMachine, now);
