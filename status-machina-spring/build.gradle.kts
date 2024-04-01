@@ -19,9 +19,6 @@ plugins {
 apply(plugin = "io.spring.dependency-management")
 
 repositories {
-    // Use jcenter for resolving your dependencies.
-    // You can declare any Maven/Ivy/file repository here.
-    jcenter()
     mavenCentral()
 }
 
@@ -77,6 +74,14 @@ tasks.test {
     useJUnitPlatform()
     testLogging {
         events("passed", "skipped", "failed")
+    }
+}
+
+
+
+configurations {
+    compileClasspath {
+        resolutionStrategy.activateDependencyLocking()
     }
 }
 

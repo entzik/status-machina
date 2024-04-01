@@ -38,6 +38,8 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
 
     private final S currentState;
     private final MachinePersistenceCallback<S, E> persistenceCallback;
+    private final long eventCounter;
+    private final Optional<E> crtEvent;
 
     public MachineInstanceImpl(
             MachineDefinition<S, E> def,
@@ -53,17 +55,21 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
             MachinePersistenceCallback<S, E> persistenceCallback,
             Map<String, String> context
     ) throws Exception {
-        this(def, id, context, persistenceCallback);
+        this(def, id, context, persistenceCallback, 0, Optional.empty());
     }
 
     public MachineInstanceImpl(
             MachineDefinition<S, E> def,
             String id,
-            Map<String, String> context, MachinePersistenceCallback<S, E> persistenceCallback
+            Map<String, String> context, MachinePersistenceCallback<S, E> persistenceCallback,
+            long eventCounter,
+            Optional<E> crtEvent
     ) throws Exception {
         this.def = def;
 
         this.id = id;
+        this.eventCounter = eventCounter;
+        this.crtEvent = crtEvent;
         this.history = ImmutableList.<TransitionRecord<S, E>>builder().build();
         this.currentState = def.getInitialState();
         this.context = ImmutableMap.<String, String>builder().putAll(context).build();
@@ -78,6 +84,7 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
             LOGGER.debug("state machine instance of type {}, with ID {} persisted", def.getName(), id);
     }
 
+
     public MachineInstanceImpl(
             String id,
             MachineDefinition<S, E> def,
@@ -87,6 +94,21 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
             ErrorType errorType,
             Optional<String> error,
             MachinePersistenceCallback<S, E> persistenceCallback
+    ) {
+        this(id, def, currentState, context, history, errorType, error, persistenceCallback, 0, Optional.empty());
+    }
+
+    public MachineInstanceImpl(
+            String id,
+            MachineDefinition<S, E> def,
+            S currentState,
+            Map<String, String> context,
+            List<TransitionRecord<S, E>> history,
+            ErrorType errorType,
+            Optional<String> error,
+            MachinePersistenceCallback<S, E> persistenceCallback,
+            long eventCounter,
+            Optional<E> crtEvent
     ) throws TransitionException {
         this.def = def;
 
@@ -97,6 +119,8 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
         this.context = ImmutableMap.<String, String>builder().putAll(context).build();
         this.errorType = errorType;
         this.persistenceCallback = persistenceCallback;
+        this.eventCounter = eventCounter;
+        this.crtEvent = crtEvent;
         if (LOGGER.isDebugEnabled())
             LOGGER.debug("creating a new state machine instance of type {}, with ID {} in state {}", def.getName(), id, def.getStateToString().apply(currentState));
     }
@@ -173,16 +197,23 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
             throw new IllegalStateException("a state machine cannot accept event when in error state:  type " + def.getName() + ", id " + id + "  error " + error.get());
         } else {
             Transition<S, E> transition = def.findEventTransition(currentState, event).orElseThrow(() -> new IllegalStateException("for machines of type " + def.getName() + " event " + event.toString() + " does not trigger any transition out of state " + currentState.toString()));
-            if (LOGGER.isDebugEnabled())
-                LOGGER.debug("a transition was found for machine instance of type {}, with ID {} from state {} to state {} on event {}",
-                        def.getName(),
-                        id,
-                        def.getEventToString().apply(event),
-                        def.getStateToString().apply(currentState),
-                        def.getStateToString().apply(transition.getTo())
-                );
+            if (this.eventCounter > 1 && this.crtEvent != event) {
+                throw new IllegalStateException("an event of type " + event.getClass().getName() + " with id " + this.getId() + " has been delivered to a machine in state " + currentState + " while the machine was expecting an event of type " + this.crtEvent.getClass().getName());
+            }
+            if (this.eventCounter + 1 == transition.getEventCardinality() && this.crtEvent.map(e -> e.equals(event)).orElse(true)) {
+                if (LOGGER.isDebugEnabled())
+                    LOGGER.debug("a transition was found for machine instance of type {}, with ID {} from state {} to state {} on event {}",
+                            def.getName(),
+                            id,
+                            def.getEventToString().apply(event),
+                            def.getStateToString().apply(currentState),
+                            def.getStateToString().apply(transition.getTo())
+                    );
 
-            return applyTransition(transition, null);
+                return applyTransition(transition, null);
+            } else {
+                return new MachineInstanceImpl<>(id, def, currentState, context, history, errorType, error, persistenceCallback, this.eventCounter + 1, this.crtEvent);
+            }
         }
     }
 
