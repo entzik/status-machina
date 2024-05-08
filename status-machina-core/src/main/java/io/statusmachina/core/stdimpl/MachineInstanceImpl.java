@@ -165,6 +165,14 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
         return error.isPresent();
     }
 
+    public long getTransitionEventCounter() {
+        return eventCounter;
+    }
+
+    public Optional<E> getCurrentEvent() {
+        return crtEvent;
+    }
+
     public Machine<S, E> start() {
         if (LOGGER.isDebugEnabled())
             LOGGER.debug("starting state machine instance of type {}, with ID {}", def.getName(), id);
@@ -197,7 +205,7 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
             throw new IllegalStateException("a state machine cannot accept event when in error state:  type " + def.getName() + ", id " + id + "  error " + error.get());
         } else {
             Transition<S, E> transition = def.findEventTransition(currentState, event).orElseThrow(() -> new IllegalStateException("for machines of type " + def.getName() + " event " + event.toString() + " does not trigger any transition out of state " + currentState.toString()));
-            if (this.eventCounter > 1 && this.crtEvent != event) {
+            if (this.eventCounter > 1 && this.crtEvent.map(e -> e.equals(event)).orElse(false)) {
                 throw new IllegalStateException("an event of type " + event.getClass().getName() + " with id " + this.getId() + " has been delivered to a machine in state " + currentState + " while the machine was expecting an event of type " + this.crtEvent.getClass().getName());
             }
             if (this.eventCounter + 1 == transition.getEventCardinality() && this.crtEvent.map(e -> e.equals(event)).orElse(true)) {
@@ -212,7 +220,9 @@ public class MachineInstanceImpl<S, E> implements Machine<S, E> {
 
                 return applyTransition(transition, null);
             } else {
-                return new MachineInstanceImpl<>(id, def, currentState, context, history, errorType, error, persistenceCallback, this.eventCounter + 1, this.crtEvent);
+                MachineInstanceImpl<S, E> newMachine = new MachineInstanceImpl<>(id, def, currentState, context, history, errorType, error, persistenceCallback, this.eventCounter + 1, this.crtEvent);
+                Machine<S, E> updated = persistenceCallback.update(newMachine, Instant.now().toEpochMilli());
+                return updated;
             }
         }
     }

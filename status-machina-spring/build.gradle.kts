@@ -13,7 +13,7 @@ plugins {
     `idea`
     `eclipse`
     signing
-    id("org.springframework.boot") version "2.5.14"
+    id("org.springframework.boot") version "2.7.18"
 }
 
 apply(plugin = "io.spring.dependency-management")
@@ -24,9 +24,6 @@ repositories {
 
 dependencies {
     api(project(":status-machina-core"))
-
-    // This dependency is exported to consumers, that is to say found on their compile classpath.
-    // api("org.apache.commons:commons-math3:3.6.1")
 
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
     compileOnly("org.springframework.boot:spring-boot-starter")
