@@ -17,6 +17,7 @@ package some.unrelated.app.config;
 
 import com.google.common.collect.ImmutableMap;
 import io.statusmachina.core.api.*;
+import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

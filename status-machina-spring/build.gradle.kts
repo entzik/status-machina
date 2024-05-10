@@ -41,7 +41,10 @@ dependencies {
     testRuntimeOnly("org.springframework.boot:spring-boot-starter-data-jpa")
     testRuntimeOnly("org.springframework.retry:spring-retry")
     testRuntimeOnly("javax.validation:validation-api")
-    testRuntimeOnly("com.h2database:h2")
+    testImplementation("org.postgresql:postgresql")
+    testImplementation("io.zonky.test:embedded-database-spring-test:2.5.1")
+    testImplementation("io.zonky.test:embedded-postgres:1.2.10")
+    testImplementation("org.liquibase:liquibase-core:4.27.0")
     testImplementation("org.assertj:assertj-core:3.4.1")
 }
 
