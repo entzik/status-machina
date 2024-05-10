@@ -26,14 +26,14 @@
         </addColumn>
 
         <createIndex tableName="sm_states" indexName="sm_states_err_types">
-            <column>error_type</column>
+            <column name="error_type" />
         </createIndex>
 
         <createIndex tableName="sm_states" indexName="sm_states_idle_machines">
-            <column>done</column>
-            <column>last_modified</column>
-            <column>error_type</column>
-            <column>idle</column>
+            <column name="done">done</column>
+            <column name="last_modified"/>
+            <column name="error_type"/>
+            <column name="idle"/>
         </createIndex>
     </changeSet>
 </databaseChangeLog>

@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -35,14 +36,13 @@ import javax.annotation.PostConstruct;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 import static io.statusmachina.spring.jpa.configuration.StateMachineRetryTemplateConfiguration.RETRY_TEMPLATE_TRANSACTION_RETRY;
 import static io.statusmachina.spring.jpa.configuration.TransactionTemplateCnfiguration.STATUS_MACHINA_TRANSACTION_TEMPLATE;
 
 @Service
-public class SpringJpaStateMachineService<S, E> implements StateMachineService<S, E>{
+public class SpringJpaStateMachineService<S, E> implements StateMachineService<S, E> {
     public static final String ERROR_STATE = "__ERROR_STATE__";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SpringJpaStateMachineService.class);
@@ -54,25 +54,9 @@ public class SpringJpaStateMachineService<S, E> implements StateMachineService<S
     MachineBuilderProvider machineInstanceBuilderProvider;
 
     @Autowired
-    private ApplicationContext context;
-
-    @Autowired
-    @Qualifier(STATUS_MACHINA_TRANSACTION_TEMPLATE)
-    private TransactionTemplate transactionTemplate;
-
-    @Autowired
-    @Qualifier(RETRY_TEMPLATE_TRANSACTION_RETRY)
-    private RetryTemplate retryTemplate;
-
-    MachinePersistenceCallback<S, E> machinePersistenceCallback;
+    FineGrainedMachinePersistenceCallback<S, E> machinePersistenceCallback;
 
     public SpringJpaStateMachineService() {
-    }
-
-    @PostConstruct
-    public void postConstruct() {
-        LOGGER.debug("constructing fine grained persistence callback");
-        machinePersistenceCallback = new FineGrainedMachinePersistenceCallback<>(context.getBean(SpringJpaStateMachineService.class), transactionTemplate, retryTemplate);
     }
 
     @Override
@@ -93,7 +77,9 @@ public class SpringJpaStateMachineService<S, E> implements StateMachineService<S
 
     public ExternalState create(Machine<S, E> instance) {
         final String id = instance.getId();
-        final ExternalState entity = externalStateRepository.findById(id).map(es -> updateExternalState(es, instance, Instant.now().toEpochMilli())).orElseGet(() -> extractExternalState(instance));
+        final ExternalState entity = externalStateRepository.findById(id)
+                .map(es -> updateExternalState(es, instance, Instant.now().toEpochMilli()))
+                .orElseGet(() -> extractExternalState(instance));
         return externalStateRepository.save(entity);
     }
 
@@ -104,6 +90,8 @@ public class SpringJpaStateMachineService<S, E> implements StateMachineService<S
         final S currentstate = def.getStringToState().apply(externalState.getCurrentState());
         final ErrorType errorType = externalState.getErrorType();
         final String error = externalState.getError();
+        final Optional<E> event = Optional.ofNullable(externalState.getCurrentEvent()).map(s -> def.getStringToEvent().apply(s));
+        final long transitionEventCounter = externalState.getTransitionEventCounter();
 
         return new MachineInstanceImpl<S, E>(
                 id,
@@ -113,7 +101,9 @@ public class SpringJpaStateMachineService<S, E> implements StateMachineService<S
                 Collections.emptyList(),
                 errorType,
                 errorType == ErrorType.NONE ? Optional.empty() : Optional.of(error),
-                machinePersistenceCallback
+                machinePersistenceCallback,
+                transitionEventCounter,
+                event
         );
     }
 
@@ -176,11 +166,13 @@ public class SpringJpaStateMachineService<S, E> implements StateMachineService<S
                 .setLocked(true)
                 .setIdle(machineInstance.isIdleState())
                 .setDone(machineInstance.isTerminalState())
-                .setLastModifiedEpoch(epochMilliForUpdate);
+                .setLastModifiedEpoch(epochMilliForUpdate)
+                .setCurrentEvent(machineInstance.getCurrentEvent().map(e -> machineInstance.getDefinition().getEventToString().apply(e)).orElse(null))
+                .setTransitionEventCounter(machineInstance.getTransitionEventCounter());
+
         applyTargetContext(currentState, machineInstance);
 
         return currentState;
-
     }
 
     private <S, E> void applyTargetContext(ExternalState currentState, Machine<S, E> machineInstance) {
@@ -203,42 +195,4 @@ public class SpringJpaStateMachineService<S, E> implements StateMachineService<S
             crtContext.remove(keyToRemove);
     }
 
-    private static class FineGrainedMachinePersistenceCallback<S, E> implements MachinePersistenceCallback<S, E> {
-        private SpringJpaStateMachineService stateMachineService;
-        private TransactionTemplate transactionTemplate;
-        private RetryTemplate transactionRetryTemplate;
-
-        public FineGrainedMachinePersistenceCallback(SpringJpaStateMachineService stateMachineService, TransactionTemplate transactionTemplate, RetryTemplate transactionRetryTemplate) {
-            this.stateMachineService = stateMachineService;
-            this.transactionTemplate = transactionTemplate;
-            this.transactionRetryTemplate = transactionRetryTemplate;
-        }
-
-        @Override
-        public Machine<S, E> saveNew(Machine<S, E> machine) {
-            return transactionRetryTemplate.execute(context -> {
-                stateMachineService.create(machine);
-                return machine;
-            });
-        }
-
-        @Override
-        public Machine<S, E> update(Machine<S, E> machine, long epochMilliForUpdate) {
-            return transactionRetryTemplate.execute(context -> {
-                stateMachineService.update(machine, epochMilliForUpdate);
-                return machine;
-            });
-        }
-
-        @Override
-        public <R> R runInTransaction(Callable<R> callable) throws Exception {
-            return transactionRetryTemplate.execute(context -> transactionTemplate.execute(status -> {
-                try {
-                    return callable.call();
-                } catch (Exception e) {
-                    throw new IllegalStateException(e);
-                }
-            }));
-        }
-    }
 }

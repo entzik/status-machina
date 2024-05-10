@@ -16,6 +16,7 @@
 package io.statusmachina.core.api;
 
 import java.util.Optional;
+import java.util.function.Supplier;
 
 /**
  * Specifies if and how a state machine can transition from one state to another. It matches an edge in the
@@ -32,12 +33,18 @@ import java.util.Optional;
  * @param <E> the event type
  */
 public class Transition<S, E> {
+    public static final Supplier<Long> EVENT_CARDINALITY_OF_ONE_SUPPLIER = () -> 1L;
+    public static final Optional<TransitionPostAction<?>> NO_POST_ACTION = Optional.empty();
+
+    public static final Optional<TransitionAction<?>> NO_ACTION = Optional.empty();
+    public static final Optional<TransitionGuard> NO_GUARD = Optional.empty();
     private final S from;
     private final S to;
     private final Optional<E> event;
     private final Optional<TransitionGuard> guard;
     private final Optional<TransitionAction<?>> action;
     private final Optional<TransitionPostAction<?>> postAction;
+    private final Supplier<Long> eventCardinalitySupplier;
 
     /**
      * Configure a transition so that if the machine is in a specified current state ("from") and receives the specified
@@ -59,7 +66,7 @@ public class Transition<S, E> {
      * @return a {@link Transition} instance
      */
     public static <S, E> Transition<S, E> event(S from, S to, E event, TransitionAction<?> action, TransitionPostAction<?> postAction) {
-        return new Transition<S,E>(from, to, event, action, postAction);
+        return new Transition<>(from, to, event, action, postAction);
     }
 
     /**
@@ -91,6 +98,38 @@ public class Transition<S, E> {
      */
     public static <S, E> Transition<S, E> event(S from, S to, E event) {
         return new Transition<>(from, to, event);
+    }
+
+    /**
+     * Configure a transition so that if the machine is in a specified current state ("from"), it will move to the
+     * specified target state ("to") after receiving the number of events ("event") as returned by the "eventCardinalitySupplier".
+     * The specified post action will be executed after the transition has completed.
+     *
+     * @param from  the current state
+     * @param to    the target state
+     * @param event the event that triggers the transition
+     * @param <S>   the state type
+     * @param <E>   the event type
+     * @return a {@link Transition} instance
+     */
+    public static <S, E> Transition<S, E> event(S from, S to, E event, TransitionAction<?> action, Supplier<Long> eventCardinalitySupplier) {
+        return new Transition<>(from, to, event, action, eventCardinalitySupplier);
+    }
+
+    /**
+     * Configure a transition so that if the machine is in a specified current state ("from"), it will move to the
+     * specified target state ("to") after receiving the number of events ("event") as returned by the "eventCardinalitySupplier".
+     * The specified post action will be executed after the transition has completed.
+     *
+     * @param from  the current state
+     * @param to    the target state
+     * @param event the event that triggers the transition
+     * @param <S>   the state type
+     * @param <E>   the event type
+     * @return a {@link Transition} instance
+     */
+    public static <S, E> Transition<S, E> event(S from, S to, E event, TransitionAction<?> action, TransitionPostAction<?> postAction, Supplier<Long> eventCardinalitySupplier) {
+        return new Transition<>(from, to, event, action, postAction, eventCardinalitySupplier);
     }
 
     /**
@@ -197,84 +236,57 @@ public class Transition<S, E> {
     }
 
     private Transition(S from, S to, E event, TransitionAction<?> action, TransitionPostAction<?> postAction) {
-        this.from = from;
-        this.to = to;
-        this.event = Optional.of(event);
-        this.action = Optional.of(action);
-        this.postAction = Optional.of(postAction);
-        this.guard = Optional.empty();
+        this(from, to, event, action, postAction, () -> 1L);
+    }
+
+    private Transition(S from, S to, E event, TransitionAction<?> action, TransitionPostAction<?> postAction, Supplier<Long> eventCardinalitySupplier) {
+        this(from, to, Optional.of(event), NO_GUARD, Optional.of(action), Optional.of(postAction), eventCardinalitySupplier);
+    }
+
+    private Transition(S from, S to, E event, TransitionAction<?> action, Supplier<Long> eventCardinalitySupplier) {
+        this(from, to, Optional.of(event), NO_GUARD, Optional.of(action), NO_POST_ACTION, eventCardinalitySupplier);
     }
 
     private Transition(S from, S to, E event, TransitionAction<?> action) {
-        this.from = from;
-        this.to = to;
-        this.event = Optional.of(event);
-        this.action = Optional.of(action);
-        this.postAction = Optional.empty();
-        this.guard = Optional.empty();
+        this(from, to, Optional.of(event), NO_GUARD, Optional.of(action), NO_POST_ACTION, EVENT_CARDINALITY_OF_ONE_SUPPLIER);
     }
 
     private Transition(S from, S to, E event) {
-        this.from = from;
-        this.to = to;
-        this.event = Optional.of(event);
-        this.action = Optional.empty();
-        this.postAction = Optional.empty();
-        this.guard = Optional.empty();
+        this(from, to, Optional.of(event), NO_GUARD, NO_ACTION, NO_POST_ACTION, EVENT_CARDINALITY_OF_ONE_SUPPLIER);
     }
 
     private Transition(S from, S to, TransitionAction<?> action, TransitionPostAction<?> postAction) {
-        this.from = from;
-        this.to = to;
-        this.event = Optional.empty();
-        this.action = Optional.of(action);
-        this.postAction = Optional.of(postAction);
-        this.guard = Optional.empty();
+        this(from, to, Optional.empty(), NO_GUARD, Optional.of(action), Optional.of(postAction), EVENT_CARDINALITY_OF_ONE_SUPPLIER);
     }
 
     private Transition(S from, S to, TransitionAction<?> action, TransitionPostAction<?> postAction, TransitionGuard transitionGuard) {
-        this.from = from;
-        this.to = to;
-        this.event = Optional.empty();
-        this.action = Optional.of(action);
-        this.postAction = Optional.of(postAction);
-        this.guard = Optional.of(transitionGuard);
+        this(from, to, Optional.empty(), Optional.of(transitionGuard), Optional.of(action), Optional.of(postAction), EVENT_CARDINALITY_OF_ONE_SUPPLIER);
     }
 
     private Transition(S from, S to, TransitionAction<?> action) {
-        this.from = from;
-        this.to = to;
-        this.event = Optional.empty();
-        this.action = Optional.of(action);
-        this.postAction = Optional.empty();
-        this.guard = Optional.empty();
+        this(from, to, Optional.empty(), NO_GUARD, Optional.of(action), NO_POST_ACTION, EVENT_CARDINALITY_OF_ONE_SUPPLIER);
     }
 
     private Transition(S from, S to, TransitionAction<?> action, TransitionGuard transitionGuard) {
-        this.from = from;
-        this.to = to;
-        this.event = Optional.empty();
-        this.action = Optional.of(action);
-        this.postAction = Optional.empty();
-        this.guard = Optional.of(transitionGuard);
+        this(from, to, Optional.empty(), Optional.of(transitionGuard), Optional.of(action), NO_POST_ACTION, EVENT_CARDINALITY_OF_ONE_SUPPLIER);
     }
 
     private Transition(S from, S to) {
-        this.from = from;
-        this.to = to;
-        this.event = Optional.empty();
-        this.action = Optional.empty();
-        this.postAction = Optional.empty();
-        this.guard = Optional.empty();
+        this(from, to, Optional.empty(), NO_GUARD, NO_ACTION, NO_POST_ACTION, EVENT_CARDINALITY_OF_ONE_SUPPLIER);
     }
 
     private Transition(S from, S to, TransitionGuard transitionGuard) {
+        this(from, to, Optional.empty(), Optional.of(transitionGuard), NO_ACTION, NO_POST_ACTION, EVENT_CARDINALITY_OF_ONE_SUPPLIER);
+    }
+
+    public Transition(S from, S to, Optional<E> event, Optional<TransitionGuard> guard, Optional<TransitionAction<?>> action, Optional<TransitionPostAction<?>> postAction, Supplier<Long> eventCardinalitySupplier) {
         this.from = from;
         this.to = to;
-        this.event = Optional.empty();
-        this.action = Optional.empty();
-        this.postAction = Optional.empty();
-        this.guard = Optional.of(transitionGuard);
+        this.event = event;
+        this.guard = guard;
+        this.action = action;
+        this.postAction = postAction;
+        this.eventCardinalitySupplier = eventCardinalitySupplier;
     }
 
     /**
@@ -330,5 +342,9 @@ public class Transition<S, E> {
 
     public Optional<TransitionGuard> getGuard() {
         return guard;
+    }
+
+    public long getEventCardinality() {
+        return eventCardinalitySupplier.get();
     }
 }

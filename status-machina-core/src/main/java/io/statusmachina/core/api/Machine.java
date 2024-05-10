@@ -61,6 +61,13 @@ public interface Machine<S, E> {
     Optional<String> getError();
 
     /**
+     * @return the number of events that have been delivered to this state machine in this transition process, if the transitin has an event cardinality greater than 1
+     */
+    long getTransitionEventCounter();
+
+    public Optional<E> getCurrentEvent();
+
+    /**
      * returns this state machine's definition
      */
     MachineDefinition<S, E> getDefinition();
