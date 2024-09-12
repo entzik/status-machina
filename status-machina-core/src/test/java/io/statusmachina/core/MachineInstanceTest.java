@@ -48,14 +48,14 @@ public class MachineInstanceTest {
     final SpyAction a3 = new SpyAction();
     final SpyPostAction a3Post = new SpyPostAction();
     final SpyAction a4 = new SpyAction();
-    final SpyAction a5 = new SpyAction(){
+    final SpyAction a5 = new SpyAction() {
         @Override
         public ImmutableMap<String, String> apply(ImmutableMap context, Object o) {
             throw new IllegalStateException("exception during action");
         }
     };
 
-    final SpyPostAction a5Post = new SpyPostAction(){
+    final SpyPostAction a5Post = new SpyPostAction() {
         @Override
         public void accept(ImmutableMap immutableMap, Object o) {
             throw new IllegalStateException("exception during post action");
@@ -63,15 +63,14 @@ public class MachineInstanceTest {
     };
 
 
-
     final Transition<States, Events> t1 = stp(States.S1, States.S1a, a1, a1Post);
     final Transition<States, Events> t11 = stp(States.S1a, States.S2, a1, a1Post);
     final Transition<States, Events> t2 = event(States.S2, States.S3, Events.E23, a2);
+    final Transition<States, Events> t2c6 = event(States.S2, States.S3, Events.E23, a2, () -> 6L);
     final Transition<States, Events> t3 = event(States.S3, States.S4, Events.E34, a3, a3Post);
     final Transition<States, Events> t4 = event(States.S3, States.S5, Events.E35, a4);
     final Transition<States, Events> t5 = event(States.S3, States.S6, Events.E36, a5, a5Post);
     final Transition<States, Events> t6 = event(States.S3, States.S7, Events.E37, a4, a5Post);
-
 
 
     final MachinePersistenceCallback<States, Events> machinePersistenceCallback = new MachinePersistenceCallback<>() {
@@ -102,8 +101,27 @@ public class MachineInstanceTest {
             .terminalStates(States.S4, States.S5)
             .events(Events.values())
             .transitions(t1, t11, t2, t3, t4, t5, t6)
-            .errorHandler(statesEventsErrorData -> {errorDataList.add((ErrorData) statesEventsErrorData);})
-            .transitionHandler(transitionData -> {transitionsDataList.add((TransitionData) transitionData);})
+            .errorHandler(statesEventsErrorData -> {
+                errorDataList.add((ErrorData) statesEventsErrorData);
+            })
+            .transitionHandler(transitionData -> {
+                transitionsDataList.add((TransitionData) transitionData);
+            })
+            .build();
+
+    final MachineDefinition<States, Events> defCardinality = new EnumBasedMachineDefinitionBuilderProvider().getMachineDefinitionBuilder(MachinaDefinitionTest.States.class, MachinaDefinitionTest.Events.class)
+            .name("toto")
+            .states(States.values())
+            .initialState(States.S1)
+            .terminalStates(States.S4, States.S5)
+            .events(Events.values())
+            .transitions(t1, t11, t2c6, t3, t4, t5, t6)
+            .errorHandler(statesEventsErrorData -> {
+                errorDataList.add((ErrorData) statesEventsErrorData);
+            })
+            .transitionHandler(transitionData -> {
+                transitionsDataList.add((TransitionData) transitionData);
+            })
             .build();
 
     @BeforeEach
@@ -149,6 +167,68 @@ public class MachineInstanceTest {
             assertThat(a2.hasBeenThere()).isTrue();
         } catch (Exception e) {
             fail("machine was not instantiated", e);
+        }
+    }
+
+    @Test
+    void testEventTransition1Cardinality6() {
+        try {
+            final Machine<States, Events> instance = new MachineInstanceImpl<>(defCardinality, machinePersistenceCallback, new HashMap<>()).start();
+            Machine<States, Events> updated = instance;
+
+            updated = updated.sendEvent(Events.E23);
+            assertThat(updated.getTransitionEventCounter()).isEqualTo(1);
+            assertThat(updated.getCurrentState()).isEqualTo(States.S2).as("event delivered 1 time(s) stay in s2");
+
+            updated = updated.sendEvent(Events.E23);
+            assertThat(updated.getTransitionEventCounter()).isEqualTo(2);
+            assertThat(updated.getCurrentState()).isEqualTo(States.S2).as("event delivered 1 time(s) stay in s2");
+
+            updated = updated.sendEvent(Events.E23);
+            assertThat(updated.getTransitionEventCounter()).isEqualTo(3);
+            assertThat(updated.getCurrentState()).isEqualTo(States.S2).as("event delivered 1 time(s) stay in s2");
+
+            updated = updated.sendEvent(Events.E23);
+            assertThat(updated.getTransitionEventCounter()).isEqualTo(4);
+            assertThat(updated.getCurrentState()).isEqualTo(States.S2).as("event delivered 1 time(s) stay in s2");
+
+            updated = updated.sendEvent(Events.E23);
+            assertThat(updated.getTransitionEventCounter()).isEqualTo(5);
+            assertThat(updated.getCurrentState()).isEqualTo(States.S2).as("event delivered 1 time(s) stay in s2");
+
+            updated = updated.sendEvent(Events.E23);
+            assertThat(updated.getTransitionEventCounter()).isEqualTo(0);
+            assertThat(updated.getCurrentState()).isEqualTo(States.S3).as("after creation machine has moved from state S2 to state S3 using event transition t2");
+
+            assertThat(a1.hasBeenThere()).isTrue();
+            assertThat(a2.hasBeenThere()).isTrue();
+        } catch (Exception e) {
+            fail("machine was not instantiated", e);
+        }
+    }
+
+    @Test
+    void testEventTransition1CardinalityError() {
+        try {
+            final Machine<States, Events> instance = new MachineInstanceImpl<>(defCardinality, machinePersistenceCallback, new HashMap<>()).start();
+            Machine<States, Events> updated = instance;
+
+            updated = updated.sendEvent(Events.E23);
+            assertThat(updated.getTransitionEventCounter()).isEqualTo(1);
+            assertThat(updated.getCurrentState()).isEqualTo(States.S2).as("event delivered 1 time(s) stay in s2");
+
+            updated = updated.sendEvent(Events.E23);
+            assertThat(updated.getTransitionEventCounter()).isEqualTo(2);
+            assertThat(updated.getCurrentState()).isEqualTo(States.S2).as("event delivered 1 time(s) stay in s2");
+
+            updated = updated.sendEvent(Events.E23);
+            assertThat(updated.getTransitionEventCounter()).isEqualTo(3);
+            assertThat(updated.getCurrentState()).isEqualTo(States.S2).as("event delivered 1 time(s) stay in s2");
+
+            updated = updated.sendEvent(Events.E34);
+            fail("should have thrown an exception because the event cardinality is 6 and the 3rd event was not the expeacted one");
+        } catch (Exception e) {
+            // expected
         }
     }
 

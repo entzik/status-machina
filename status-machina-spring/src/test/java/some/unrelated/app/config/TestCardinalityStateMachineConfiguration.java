@@ -16,8 +16,10 @@
 package some.unrelated.app.config;
 
 import com.google.common.collect.ImmutableMap;
-import io.statusmachina.core.api.*;
-import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
+import io.statusmachina.core.api.MachineDefinition;
+import io.statusmachina.core.api.MachineDefinitionBuilderProvider;
+import io.statusmachina.core.api.Transition;
+import io.statusmachina.core.api.TransitionActionBase;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,7 +30,10 @@ import static io.statusmachina.core.api.Transition.event;
 import static io.statusmachina.core.api.Transition.stp;
 
 @Configuration
-public class TestOneStateMachineConfiguration {
+public class TestCardinalityStateMachineConfiguration {
+
+    public static final long CARDINALITY = 5L;
+
     static class SpyAction<P> extends TransitionActionBase<P> {
         private boolean beenThere = false;
         private ImmutableMap<String, String> context;
@@ -70,20 +75,19 @@ public class TestOneStateMachineConfiguration {
     public final SpyAction a4 = new SpyAction();
 
     final Transition<States, Events> t1 = stp(States.S1, States.S2, a1);
-    final Transition<States, Events> t2 = event(States.S2, States.S3, Events.E23, a2);
+    final Transition<States, Events> t2 = event(States.S2, States.S3, Events.E23, a2, () -> CARDINALITY);
     final Transition<States, Events> t3 = event(States.S3, States.S4, Events.E34, a3);
     final Transition<States, Events> t4 = event(States.S3, States.S5, Events.E35, a4);
 
     @Autowired
     MachineDefinitionBuilderProvider<States, Events> builderProvider;
 
-    @Bean("Test1StateMachineDef")
+    @Bean("TestCardinalityStateMachineDef")
     public MachineDefinition<States, Events> getMachineDefinition() {
         return builderProvider.getMachineDefinitionBuilder(States.class, Events.class)
                 .name("toto")
                 .states(States.values())
                 .initialState(States.S1)
-//                .idleStates(States.S2)
                 .terminalStates(States.S4, States.S5)
                 .events(Events.values())
                 .transitions(t1, t2, t3, t4)

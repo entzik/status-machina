@@ -79,6 +79,12 @@ public class ExternalState {
     @NotNull
     long lastModifiedEpoch;
 
+    @Column(name = "current_event")
+    String currentEvent;
+
+    @Column(name = "transition_event_counter")
+    long transitionEventCounter;
+
     public ExternalState() {
     }
 
@@ -171,6 +177,24 @@ public class ExternalState {
 
     public ExternalState setDone(boolean done) {
         this.done = done;
+        return this;
+    }
+
+    public String getCurrentEvent() {
+        return currentEvent;
+    }
+
+    public ExternalState setCurrentEvent(String currentEvent) {
+        this.currentEvent = currentEvent;
+        return this;
+    }
+
+    public long getTransitionEventCounter() {
+        return transitionEventCounter;
+    }
+
+    public ExternalState setTransitionEventCounter(long transitionEventCounter) {
+        this.transitionEventCounter = transitionEventCounter;
         return this;
     }
 

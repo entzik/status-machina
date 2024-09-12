@@ -13,23 +13,17 @@ plugins {
     `idea`
     `eclipse`
     signing
-    id("org.springframework.boot") version "2.5.14"
+    id("org.springframework.boot") version "2.7.18"
 }
 
 apply(plugin = "io.spring.dependency-management")
 
 repositories {
-    // Use jcenter for resolving your dependencies.
-    // You can declare any Maven/Ivy/file repository here.
-    jcenter()
     mavenCentral()
 }
 
 dependencies {
     api(project(":status-machina-core"))
-
-    // This dependency is exported to consumers, that is to say found on their compile classpath.
-    // api("org.apache.commons:commons-math3:3.6.1")
 
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
     compileOnly("org.springframework.boot:spring-boot-starter")
@@ -47,7 +41,10 @@ dependencies {
     testRuntimeOnly("org.springframework.boot:spring-boot-starter-data-jpa")
     testRuntimeOnly("org.springframework.retry:spring-retry")
     testRuntimeOnly("javax.validation:validation-api")
-    testRuntimeOnly("com.h2database:h2")
+    testImplementation("org.postgresql:postgresql")
+    testImplementation("io.zonky.test:embedded-database-spring-test:2.5.1")
+    testImplementation("io.zonky.test:embedded-postgres:1.2.10")
+    testImplementation("org.liquibase:liquibase-core:4.27.0")
     testImplementation("org.assertj:assertj-core:3.4.1")
 }
 
@@ -77,6 +74,14 @@ tasks.test {
     useJUnitPlatform()
     testLogging {
         events("passed", "skipped", "failed")
+    }
+}
+
+
+
+configurations {
+    compileClasspath {
+        resolutionStrategy.activateDependencyLocking()
     }
 }
 
