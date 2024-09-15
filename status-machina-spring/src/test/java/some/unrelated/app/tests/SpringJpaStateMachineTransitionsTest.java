@@ -46,7 +46,8 @@ import static org.assertj.core.api.Assertions.*;
 )
 @AutoConfigureEmbeddedDatabase(
         type = AutoConfigureEmbeddedDatabase.DatabaseType.POSTGRES,
-        provider = AutoConfigureEmbeddedDatabase.DatabaseProvider.ZONKY
+        provider = AutoConfigureEmbeddedDatabase.DatabaseProvider.ZONKY,
+        refresh = AutoConfigureEmbeddedDatabase.RefreshMode.BEFORE_EACH_TEST_METHOD
 )
 public class SpringJpaStateMachineTransitionsTest {
 

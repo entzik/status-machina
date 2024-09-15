@@ -16,30 +16,20 @@
 
 package io.statusmachina.spring.jpa;
 
-import io.statusmachina.core.stdimpl.MachineInstanceImpl;
 import io.statusmachina.core.api.*;
-import io.statusmachina.core.spi.MachinePersistenceCallback;
 import io.statusmachina.core.spi.StateMachineService;
+import io.statusmachina.core.stdimpl.MachineInstanceImpl;
 import io.statusmachina.spring.jpa.model.ExternalState;
 import io.statusmachina.spring.jpa.repo.ExternalStateRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.support.TransactionTemplate;
 
-import javax.annotation.PostConstruct;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import static io.statusmachina.spring.jpa.configuration.StateMachineRetryTemplateConfiguration.RETRY_TEMPLATE_TRANSACTION_RETRY;
-import static io.statusmachina.spring.jpa.configuration.TransactionTemplateCnfiguration.STATUS_MACHINA_TRANSACTION_TEMPLATE;
 
 @Service
 public class SpringJpaStateMachineService<S, E> implements StateMachineService<S, E> {

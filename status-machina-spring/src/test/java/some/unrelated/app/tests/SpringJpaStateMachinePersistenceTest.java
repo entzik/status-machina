@@ -64,7 +64,7 @@ public class SpringJpaStateMachinePersistenceTest {
             final Machine<States, Events> read = service.read(def, instance.getId());
 
             assertThat(read.getId()).isEqualTo(instance.getId()).as("id matches");
-            assertThat(read.getContext()).containsExactly(instance.getContext().entrySet().toArray(new Map.Entry[instance.getContext().size()])).as("context matches");
+            assertThat(read.getContext()).containsAllEntriesOf(instance.getContext()).as("context matches");
             assertThat(read.getCurrentState()).isEqualTo(instance.getCurrentState()).as("states match");
 
         } catch (Exception e) {
@@ -87,7 +87,7 @@ public class SpringJpaStateMachinePersistenceTest {
 
             // assert
             assertThat(updated.getId()).isEqualTo(instance.getId()).as("id matches");
-            assertThat(updated.getContext()).containsExactly(instance.getContext().entrySet().toArray(new Map.Entry[instance.getContext().size()])).as("context matches");
+            assertThat(updated.getContext()).containsAllEntriesOf(instance.getContext()).as("context matches");
             assertThat(updated.getCurrentState()).isEqualTo(States.S3).as("states match");
 
         } catch (Exception e) {

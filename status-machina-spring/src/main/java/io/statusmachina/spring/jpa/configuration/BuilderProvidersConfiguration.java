@@ -16,10 +16,10 @@
 
 package io.statusmachina.spring.jpa.configuration;
 
-import io.statusmachina.core.stdimpl.EnumBasedMachineDefinitionBuilderProvider;
-import io.statusmachina.core.stdimpl.MachineInstanceBuilderImpl;
 import io.statusmachina.core.api.MachineBuilderProvider;
 import io.statusmachina.core.api.MachineDefinitionBuilderProvider;
+import io.statusmachina.core.stdimpl.EnumBasedMachineDefinitionBuilderProvider;
+import io.statusmachina.core.stdimpl.MachineInstanceBuilderImpl;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
