@@ -20,7 +20,6 @@ import io.statusmachina.spring.jpa.autoconfig.StatusMachinaProperties;
 import org.hibernate.TransactionException;
 import org.hibernate.exception.LockAcquisitionException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.dao.CannotAcquireLockException;

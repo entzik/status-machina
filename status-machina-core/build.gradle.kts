@@ -13,11 +13,7 @@ plugins {
     `idea`
     `eclipse`
     signing
-    id("org.springframework.boot") version "2.1.6.RELEASE"
 }
-
-apply(plugin = "io.spring.dependency-management")
-
 
 repositories {
     mavenCentral()
@@ -31,7 +27,6 @@ dependencies {
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.3.2")
     testImplementation("org.junit.jupiter:junit-jupiter-engine:5.3.2")
-    testRuntimeOnly("com.h2database:h2")
     testImplementation("org.assertj:assertj-core:3.4.1")
 }
 
@@ -49,10 +44,6 @@ tasks.register<Jar>("javadocJar") {
     from(tasks.javadoc.get().destinationDir)
 }
 
-tasks.getByName("bootJar") {
-    enabled = false
-}
-
 tasks.test {
     useJUnitPlatform()
     testLogging {
@@ -68,6 +59,15 @@ configurations {
 
 val MAVEN_UPLOAD_USER: String by project
 val MAVEN_UPLOAD_PWD: String by project
+
+/*
+val MAVEN_UPLOAD_USER: String by project.extra("defaultUsername")
+project.extra["MAVEN_UPLOAD_USER"] = findProperty("MAVEN_UPLOAD_USER")?.toString() ?: "defaultUsername"
+
+val MAVEN_UPLOAD_PWD: String  by project.extra("defaultpwd")
+project.extra["MAVEN_UPLOAD_PWD"] = findProperty("MAVEN_UPLOAD_PWD")?.toString() ?: "defaultUsername"
+*/
+
 
 publishing {
     repositories {
