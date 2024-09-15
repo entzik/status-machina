@@ -8,12 +8,6 @@ plugins {
     id("io.spring.dependency-management") version "1.1.0"
 }
 
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))
-    }
-}
-
 repositories {
     mavenCentral()
 }

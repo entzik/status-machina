@@ -18,12 +18,6 @@ plugins {
 
 apply(plugin = "io.spring.dependency-management")
 
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))
-    }
-}
-
 repositories {
     mavenCentral()
 }
