@@ -75,11 +75,8 @@ configurations {
     }
 }
 
-val MAVEN_UPLOAD_USER: String by project.extra("defaultUsername")
-project.extra["MAVEN_UPLOAD_USER"] = findProperty("MAVEN_UPLOAD_USER")?.toString() ?: "defaultUsername"
-
-val MAVEN_UPLOAD_PWD: String  by project.extra("defaultPwd")
-project.extra["MAVEN_UPLOAD_PWD"] = findProperty("MAVEN_UPLOAD_PWD")?.toString() ?: "defaultPwd"
+val MAVEN_UPLOAD_USER: String by project
+val MAVEN_UPLOAD_PWD: String by project
 
 publishing {
     repositories {
