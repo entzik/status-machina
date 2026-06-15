@@ -5,7 +5,9 @@ import io.statusmachina.core.spi.MachinePersistenceCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryException;
+import org.springframework.core.retry.Retryable;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -30,7 +32,7 @@ class FineGrainedMachinePersistenceCallback<S, E> implements MachinePersistenceC
 
     @Override
     public Machine<S, E> saveNew(Machine<S, E> machine) {
-        return transactionRetryTemplate.execute(context -> {
+        return runWithRetry(() -> {
             stateMachineService.create(machine);
             return machine;
         });
@@ -38,7 +40,7 @@ class FineGrainedMachinePersistenceCallback<S, E> implements MachinePersistenceC
 
     @Override
     public Machine<S, E> update(Machine<S, E> machine, long epochMilliForUpdate) {
-        return transactionRetryTemplate.execute(context -> {
+        return runWithRetry(() -> {
             stateMachineService.update(machine, epochMilliForUpdate);
             return machine;
         });
@@ -46,12 +48,33 @@ class FineGrainedMachinePersistenceCallback<S, E> implements MachinePersistenceC
 
     @Override
     public <R> R runInTransaction(Callable<R> callable) throws Exception {
-        return transactionRetryTemplate.execute(context -> transactionTemplate.execute(status -> {
+        return runWithRetry(() -> transactionTemplate.execute(status -> {
             try {
                 return callable.call();
             } catch (Exception e) {
                 throw new IllegalStateException(e);
             }
         }));
+    }
+
+    /**
+     * Executes the given operation through the retry template. When the retry policy is exhausted
+     * Spring Framework wraps the last failure in a {@link RetryException}; we rethrow that original
+     * cause so callers observe the same exception they would have seen without retries, matching the
+     * behaviour of the previous spring-retry based implementation.
+     */
+    private <R> R runWithRetry(Retryable<R> retryable) {
+        try {
+            return transactionRetryTemplate.execute(retryable);
+        } catch (RetryException e) {
+            final Throwable cause = e.getCause();
+            if (cause instanceof RuntimeException) {
+                throw (RuntimeException) cause;
+            }
+            if (cause instanceof Error) {
+                throw (Error) cause;
+            }
+            throw new IllegalStateException(cause != null ? cause : e);
+        }
     }
 }

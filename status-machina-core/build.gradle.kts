@@ -13,7 +13,7 @@ plugins {
     `idea`
     `eclipse`
     signing
-    id("org.springframework.boot") version "2.1.6.RELEASE"
+    id("org.springframework.boot")
 }
 
 apply(plugin = "io.spring.dependency-management")
@@ -23,16 +23,29 @@ repositories {
     mavenCentral()
 }
 
+val javaVersion: String by project
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(javaVersion.toInt()))
+    }
+}
+
 dependencies {
     // This dependency is exported to consumers, that is to say found on their compile classpath.
     // api("org.apache.commons:commons-math3:3.6.1")
-    api("com.google.guava:guava:28.1-jre")
-    implementation("org.slf4j:slf4j-api:1.7.30")
+    api("com.google.guava:guava:33.4.8-jre")
+    // slf4j-api, JUnit and AssertJ versions are managed by the Spring Boot dependencies BOM
+    // (imported via io.spring.dependency-management). Guava is not in the BOM, so it stays pinned.
+    implementation("org.slf4j:slf4j-api")
 
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.3.2")
-    testImplementation("org.junit.jupiter:junit-jupiter-engine:5.3.2")
+    testImplementation("org.junit.jupiter:junit-jupiter-api")
+    testImplementation("org.junit.jupiter:junit-jupiter-engine")
+    // Keep the platform launcher aligned with the BOM-managed JUnit 6 engine (Gradle would otherwise
+    // supply an older launcher, causing "unaligned junit-platform-engine and junit-platform-launcher").
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testRuntimeOnly("com.h2database:h2")
-    testImplementation("org.assertj:assertj-core:3.4.1")
+    testImplementation("org.assertj:assertj-core")
 }
 
 tasks.getByName("jar") {
@@ -66,8 +79,8 @@ configurations {
     }
 }
 
-val MAVEN_UPLOAD_USER: String by project
-val MAVEN_UPLOAD_PWD: String by project
+val MAVEN_UPLOAD_USER = (project.findProperty("MAVEN_UPLOAD_USER") ?: "") as String
+val MAVEN_UPLOAD_PWD = (project.findProperty("MAVEN_UPLOAD_PWD") ?: "") as String
 
 publishing {
     repositories {

@@ -16,15 +16,14 @@
 package some.unrelated.app.config;
 
 import com.google.common.collect.ImmutableMap;
-import io.statusmachina.core.api.*;
-import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
+import io.statusmachina.core.api.MachineDefinition;
+import io.statusmachina.core.api.MachineDefinitionBuilderProvider;
+import io.statusmachina.core.api.Transition;
+import io.statusmachina.core.api.TransitionActionBase;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.Map;
-
-import static io.statusmachina.core.api.Transition.event;
 import static io.statusmachina.core.api.Transition.stp;
 
 @Configuration
