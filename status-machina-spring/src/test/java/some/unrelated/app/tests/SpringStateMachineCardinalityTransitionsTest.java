@@ -18,7 +18,6 @@ package some.unrelated.app.tests;
 import io.statusmachina.core.api.Machine;
 import io.statusmachina.core.api.MachineDefinition;
 import io.statusmachina.core.spi.StateMachineService;
-import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,25 +25,20 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import some.unrelated.app.TestSpringBootApp;
-import some.unrelated.app.config.TestCardinalityStateMachineConfiguration;
 import some.unrelated.app.config.TestCardinalityStateMachineConfiguration.Events;
 import some.unrelated.app.config.TestCardinalityStateMachineConfiguration.States;
-import some.unrelated.app.config.TestOneStateMachineConfiguration;
 
 import java.util.HashMap;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static some.unrelated.app.config.TestCardinalityStateMachineConfiguration.CARDINALITY;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(
         classes = TestSpringBootApp.class,
         webEnvironment = SpringBootTest.WebEnvironment.NONE
-)
-@AutoConfigureEmbeddedDatabase(
-        type = AutoConfigureEmbeddedDatabase.DatabaseType.POSTGRES,
-        provider = AutoConfigureEmbeddedDatabase.DatabaseProvider.ZONKY
 )
 public class SpringStateMachineCardinalityTransitionsTest {
 

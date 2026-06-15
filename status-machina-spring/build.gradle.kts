@@ -13,7 +13,7 @@ plugins {
     `idea`
     `eclipse`
     signing
-    id("org.springframework.boot") version "2.7.18"
+    id("org.springframework.boot")
 }
 
 apply(plugin = "io.spring.dependency-management")
@@ -22,16 +22,23 @@ repositories {
     mavenCentral()
 }
 
+val javaVersion: String by project
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(javaVersion.toInt()))
+    }
+}
+
 dependencies {
     api(project(":status-machina-core"))
 
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
+    // Spring Boot 4 / Spring Framework 7 ship native retry support in spring-core
+    // (org.springframework.core.retry), so the external spring-retry dependency is no longer needed.
     compileOnly("org.springframework.boot:spring-boot-starter")
     compileOnly("org.springframework.boot:spring-boot-starter-data-jpa")
-    compileOnly("org.springframework.retry:spring-retry")
-    compileOnly("javax.validation:validation-api")
-
-    implementation("com.google.guava:guava:28.1-jre")
+    compileOnly("jakarta.validation:jakarta.validation-api")
 
     // Use JUnit test framework
     testImplementation("org.springframework.boot:spring-boot-starter-test")
@@ -39,13 +46,20 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-engine")
     testRuntimeOnly("org.springframework.boot:spring-boot-starter")
     testRuntimeOnly("org.springframework.boot:spring-boot-starter-data-jpa")
-    testRuntimeOnly("org.springframework.retry:spring-retry")
-    testRuntimeOnly("javax.validation:validation-api")
+    testRuntimeOnly("jakarta.validation:jakarta.validation-api")
     testImplementation("org.postgresql:postgresql")
-    testImplementation("io.zonky.test:embedded-database-spring-test:2.5.1")
-    testImplementation("io.zonky.test:embedded-postgres:1.2.10")
-    testImplementation("org.liquibase:liquibase-core:4.27.0")
-    testImplementation("org.assertj:assertj-core:3.4.1")
+    // A real (binary) PostgreSQL is launched per test context via io.zonky.test.db.postgres.embedded.EmbeddedPostgres
+    // and wired as the DataSource bean (see EmbeddedPostgresTestConfig). We deliberately do NOT use Zonky's
+    // Spring integration (@AutoConfigureEmbeddedDatabase), whose Liquibase support does not yet work under
+    // Spring Boot 4 (see zonkyio/embedded-database-spring-test#318). Spring Boot's own Liquibase auto-config
+    // builds the schema against this datasource, keeping the PostgreSQL-targeted changesets faithful.
+    testImplementation("io.zonky.test:embedded-postgres:2.1.0")
+    testImplementation("org.liquibase:liquibase-core")
+    // Spring Boot 4 split auto-configuration into per-technology modules; LiquibaseAutoConfiguration
+    // now lives in spring-boot-liquibase rather than the monolithic spring-boot-autoconfigure.
+    testRuntimeOnly("org.springframework.boot:spring-boot-liquibase")
+    // version managed by the Spring Boot dependencies BOM (also pulled in transitively by spring-boot-starter-test)
+    testImplementation("org.assertj:assertj-core")
 }
 
 
@@ -85,8 +99,8 @@ configurations {
     }
 }
 
-val MAVEN_UPLOAD_USER: String by project
-val MAVEN_UPLOAD_PWD: String by project
+val MAVEN_UPLOAD_USER = (project.findProperty("MAVEN_UPLOAD_USER") ?: "") as String
+val MAVEN_UPLOAD_PWD = (project.findProperty("MAVEN_UPLOAD_PWD") ?: "") as String
 
 publishing {
     repositories {
