@@ -15,19 +15,17 @@
 
 package io.statusmachina.spring.jpa.configuration;
 
-import com.google.common.collect.ImmutableMap;
 import io.statusmachina.spring.jpa.autoconfig.StatusMachinaProperties;
 import org.hibernate.TransactionException;
 import org.hibernate.exception.LockAcquisitionException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.retry.RetryPolicy;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.dao.CannotAcquireLockException;
-import org.springframework.retry.RetryPolicy;
-import org.springframework.retry.backoff.ExponentialBackOffPolicy;
-import org.springframework.retry.policy.SimpleRetryPolicy;
-import org.springframework.retry.support.RetryTemplate;
+
+import java.time.Duration;
 
 @Configuration
 public class StateMachineRetryTemplateConfiguration {
@@ -38,23 +36,21 @@ public class StateMachineRetryTemplateConfiguration {
 
     @Bean(name = RETRY_TEMPLATE_TRANSACTION_RETRY)
     public RetryTemplate configureStateMachineTransactionRetryTemplate() {
+        // maxAttempts historically meant the total number of invocations (initial + retries),
+        // whereas Spring Framework's native RetryPolicy counts retries that follow the first
+        // invocation, so we subtract one to preserve the previous behaviour.
+        final long maxRetries = Math.max(0, properties.getTransactionRetry().getMaxAttempts() - 1);
 
-        RetryTemplate template = new RetryTemplate();
-
-        ExponentialBackOffPolicy backOffPolicy = new ExponentialBackOffPolicy();
-        backOffPolicy.setInitialInterval(properties.getTransactionRetry().getInitialInterval());
-        backOffPolicy.setMaxInterval(properties.getTransactionRetry().getMaxInterval());
-        backOffPolicy.setMultiplier(properties.getTransactionRetry().getMultiplier());
-        template.setBackOffPolicy(backOffPolicy);
-
-        final ImmutableMap<Class<? extends Throwable>, Boolean> build = ImmutableMap.<Class<? extends Throwable>, Boolean>builder()
-                .put(TransactionException.class, true)
-                .put(LockAcquisitionException.class, true)
-                .put(CannotAcquireLockException.class, true)
+        // includes() matches against the thrown exception and its nested causes, which preserves
+        // the traverseCauses=true semantics of the previous SimpleRetryPolicy configuration.
+        RetryPolicy retryPolicy = RetryPolicy.builder()
+                .maxRetries(maxRetries)
+                .delay(Duration.ofMillis(properties.getTransactionRetry().getInitialInterval()))
+                .maxDelay(Duration.ofMillis(properties.getTransactionRetry().getMaxInterval()))
+                .multiplier(properties.getTransactionRetry().getMultiplier())
+                .includes(TransactionException.class, LockAcquisitionException.class, CannotAcquireLockException.class)
                 .build();
-        RetryPolicy retryPolicy = new SimpleRetryPolicy(properties.getTransactionRetry().getMaxAttempts(), build, true);
-        template.setRetryPolicy(retryPolicy);
 
-        return template;
+        return new RetryTemplate(retryPolicy);
     }
 }

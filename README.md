@@ -222,6 +222,15 @@ Pro tip: whenever a machine transition to a new state, whether following the del
 
 The StatusMachina SpringBoot integration defines its own spring boot starter. It persists a state machine data in the current Spring Boot data source and provides a companion spring service for convenience. Apart from making sure the state machine tables and indexes are defines in the database pointed at by the data source, there is nothing much to do.
 
+## Spring Boot 4 compatibility
+
+The integration targets **Spring Boot 4.0 / Spring Framework 7** and therefore:
+
+- Requires **Java 17 or later** (the Spring Boot 4 baseline).
+- Uses the **Jakarta EE 11** namespace (`jakarta.persistence.*`, `jakarta.validation.*`) instead of the legacy `javax.*` packages.
+- Relies on the **native retry support** built into `spring-core` (`org.springframework.core.retry`) rather than the external `spring-retry` library, which is now in maintenance mode. No `spring-retry` dependency is required on the consumer's classpath.
+- Is auto-configured through `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports` (the legacy `spring.factories` registration, removed in Boot 4, is no longer used).
+
 ## Setting up the database
 
 The recomended way to set up the database is using Liquibase change sets, but of course that is ultimately up to you. 

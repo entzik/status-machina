@@ -19,7 +19,6 @@ package some.unrelated.app.tests;
 import io.statusmachina.core.api.Machine;
 import io.statusmachina.core.api.MachineDefinition;
 import io.statusmachina.core.spi.StateMachineService;
-import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,10 +42,6 @@ import static org.assertj.core.api.Assertions.fail;
         classes = TestSpringBootApp.class,
         webEnvironment = SpringBootTest.WebEnvironment.NONE
 )
-@AutoConfigureEmbeddedDatabase(
-        type = AutoConfigureEmbeddedDatabase.DatabaseType.POSTGRES,
-        provider = AutoConfigureEmbeddedDatabase.DatabaseProvider.ZONKY
-)
 public class SpringJpaStateMachinePersistenceTest {
 
     @Autowired
@@ -64,7 +59,8 @@ public class SpringJpaStateMachinePersistenceTest {
             final Machine<States, Events> read = service.read(def, instance.getId());
 
             assertThat(read.getId()).isEqualTo(instance.getId()).as("id matches");
-            assertThat(read.getContext()).containsExactly(instance.getContext().entrySet().toArray(new Map.Entry[instance.getContext().size()])).as("context matches");
+            // containsOnly (order-insensitive) — a persisted map has no guaranteed iteration order
+            assertThat(read.getContext()).containsOnly(instance.getContext().entrySet().toArray(new Map.Entry[instance.getContext().size()])).as("context matches");
             assertThat(read.getCurrentState()).isEqualTo(instance.getCurrentState()).as("states match");
 
         } catch (Exception e) {
@@ -87,7 +83,8 @@ public class SpringJpaStateMachinePersistenceTest {
 
             // assert
             assertThat(updated.getId()).isEqualTo(instance.getId()).as("id matches");
-            assertThat(updated.getContext()).containsExactly(instance.getContext().entrySet().toArray(new Map.Entry[instance.getContext().size()])).as("context matches");
+            // containsOnly (order-insensitive) — a persisted map has no guaranteed iteration order
+            assertThat(updated.getContext()).containsOnly(instance.getContext().entrySet().toArray(new Map.Entry[instance.getContext().size()])).as("context matches");
             assertThat(updated.getCurrentState()).isEqualTo(States.S3).as("states match");
 
         } catch (Exception e) {

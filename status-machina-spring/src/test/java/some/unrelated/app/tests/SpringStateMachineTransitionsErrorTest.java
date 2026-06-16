@@ -18,7 +18,6 @@ package some.unrelated.app.tests;
 import io.statusmachina.core.api.Machine;
 import io.statusmachina.core.api.MachineDefinition;
 import io.statusmachina.core.spi.StateMachineService;
-import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,10 +39,6 @@ import static org.assertj.core.api.Assertions.*;
 @SpringBootTest(
         classes = TestSpringBootApp.class,
         webEnvironment = SpringBootTest.WebEnvironment.NONE
-)
-@AutoConfigureEmbeddedDatabase(
-        type = AutoConfigureEmbeddedDatabase.DatabaseType.POSTGRES,
-        provider = AutoConfigureEmbeddedDatabase.DatabaseProvider.ZONKY
 )
 public class SpringStateMachineTransitionsErrorTest {
 

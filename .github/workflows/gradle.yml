@@ -18,3 +18,33 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
       - name: Build with Gradle
         run: ./gradlew -PMAVEN_UPLOAD_USER=${{ secrets.SONATYPE_USER }} -PMAVEN_UPLOAD_PWD=${{ secrets.SONATYPE_PASSWORD }}  -PPGP_SIGNING_KEY="${{ secrets.PGP_SIGNING_KEY }}" -PPGP_SIGNING_PASSWORD="${{ secrets.PGP_SIGNING_PASSWORD }}" build publish
+
+  # Forward-compatibility check: the library is built against the springBootVersion baseline in
+  # gradle.properties, but Spring guarantees backward compatibility within a major version. This job
+  # compiles the library (main + test sources) against newer Spring Boot 4.x releases to catch any
+  # surprise early. Bump these versions as new 4.x releases ship.
+  #
+  # --write-locks is required: the committed gradle.lockfile is pinned to the baseline graph, so an
+  # overridden Spring Boot version would otherwise fail dependency-lock enforcement before compiling.
+  # Locks are rewritten in the ephemeral runner only and never committed from here.
+  compatibility:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        springBootVersion:
+          - '4.0.7'   # latest 4.0.x patch
+          - '4.1.0'   # latest 4.1.x minor
+    name: compat (Spring Boot ${{ matrix.springBootVersion }})
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: 17
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+      - name: Compile against Spring Boot ${{ matrix.springBootVersion }}
+        run: ./gradlew compileJava compileTestJava -PspringBootVersion=${{ matrix.springBootVersion }} --write-locks
