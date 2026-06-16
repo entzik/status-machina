@@ -86,8 +86,13 @@ publishing {
     repositories {
         maven {
             name = "MavenCentral"
-            val releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2"
-            val snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots"
+            // OSSRH (oss.sonatype.org) reached end of life on 2025-06-30. Releases now go through the
+            // Central Portal's OSSRH-compatibility staging API; snapshots use the Portal snapshot repo.
+            // After CI uploads, the deployment appears at https://central.sonatype.com/publishing/deployments
+            // to be validated and published. Credentials must be a Central Portal user token
+            // (generate at https://central.sonatype.com/usertoken) — old OSSRH credentials no longer work.
+            val releasesRepoUrl = "https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/"
+            val snapshotsRepoUrl = "https://central.sonatype.com/repository/maven-snapshots/"
             url = uri(if (version.toString().endsWith("SNAPSHOT")) snapshotsRepoUrl else releasesRepoUrl)
             credentials {
                 username = MAVEN_UPLOAD_USER
