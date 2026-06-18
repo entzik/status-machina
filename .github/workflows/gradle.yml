@@ -18,6 +18,26 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
       - name: Build with Gradle
         run: ./gradlew -PMAVEN_UPLOAD_USER=${{ secrets.SONATYPE_USER }} -PMAVEN_UPLOAD_PWD=${{ secrets.SONATYPE_PASSWORD }}  -PPGP_SIGNING_KEY="${{ secrets.PGP_SIGNING_KEY }}" -PPGP_SIGNING_PASSWORD="${{ secrets.PGP_SIGNING_PASSWORD }}" build publish
+      # The previous step uploads the artifacts into an OPEN staging repository on the Central Portal's
+      # OSSRH-compatibility API, but a raw maven-publish PUT never finalizes it — so without this step the
+      # release just sits in an invisible open repo and never reaches Maven Central. This finalizes the
+      # namespace's staging repo with publishing_type=automatic, which validates AND releases it with no
+      # manual click. Only runs for release (non-SNAPSHOT) versions; snapshots use the snapshot repo.
+      - name: Release staged deployment to Maven Central
+        env:
+          SONATYPE_USER: ${{ secrets.SONATYPE_USER }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+        run: |
+          version=$(grep -E '^version=' gradle.properties | cut -d= -f2)
+          if [[ "$version" == *SNAPSHOT ]]; then
+            echo "Version $version is a snapshot — nothing to finalize."
+            exit 0
+          fi
+          bearer=$(printf '%s' "$SONATYPE_USER:$SONATYPE_PASSWORD" | base64 -w0)
+          echo "Finalizing and auto-publishing the io.statusmachina staging repository for $version..."
+          curl --fail-with-body -sS -X POST \
+            -H "Authorization: Bearer $bearer" \
+            "https://ossrh-staging-api.central.sonatype.com/manual/upload/defaultRepository/io.statusmachina?publishing_type=automatic"
 
   # Forward-compatibility check: the library is built against the springBootVersion baseline in
   # gradle.properties, but Spring guarantees backward compatibility within a major version. This job
